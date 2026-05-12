@@ -16,33 +16,73 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // For now, mock data (we'll connect to Supabase later)
-    const mockData: ChargerData[] = [
-      {
-        id: 'TestCharger123',
-        uptime24h: 95.5,
-        uptime7d: 92.3,
-        uptime30d: 89.8,
-        lastUpdate: new Date().toLocaleTimeString()
-      },
-      {
-        id: 'Charger456',
-        uptime24h: 87.2,
-        uptime7d: 85.1,
-        uptime30d: 82.5,
-        lastUpdate: new Date().toLocaleTimeString()
-      },
-      {
-        id: 'Charger789',
-        uptime24h: 98.0,
-        uptime7d: 96.5,
-        uptime30d: 94.2,
-        lastUpdate: new Date().toLocaleTimeString()
+    const fetchChargers = async () => {
+      try {
+        const res = await fetch('/api/chargers')
+        const data = await res.json()
+        if (data && Array.isArray(data) && data.length > 0) {
+          setChargers(data)
+        } else {
+          // Fall back to mock data if API fails
+          setChargers([
+            {
+              id: 'TestCharger123',
+              uptime24h: 95.5,
+              uptime7d: 92.3,
+              uptime30d: 89.8,
+              lastUpdate: new Date().toLocaleTimeString()
+            },
+            {
+              id: 'Charger456',
+              uptime24h: 87.2,
+              uptime7d: 85.1,
+              uptime30d: 82.5,
+              lastUpdate: new Date().toLocaleTimeString()
+            },
+            {
+              id: 'Charger789',
+              uptime24h: 98.0,
+              uptime7d: 96.5,
+              uptime30d: 94.2,
+              lastUpdate: new Date().toLocaleTimeString()
+            }
+          ])
+        }
+      } catch (error) {
+        console.log('Using mock data (Supabase unreachable locally)')
+        // Use mock data
+        setChargers([
+          {
+            id: 'TestCharger123',
+            uptime24h: 95.5,
+            uptime7d: 92.3,
+            uptime30d: 89.8,
+            lastUpdate: new Date().toLocaleTimeString()
+          },
+          {
+            id: 'Charger456',
+            uptime24h: 87.2,
+            uptime7d: 85.1,
+            uptime30d: 82.5,
+            lastUpdate: new Date().toLocaleTimeString()
+          },
+          {
+            id: 'Charger789',
+            uptime24h: 98.0,
+            uptime7d: 96.5,
+            uptime30d: 94.2,
+            lastUpdate: new Date().toLocaleTimeString()
+          }
+        ])
       }
-    ]
+      setLoading(false)
+    }
 
-    setChargers(mockData)
-    setLoading(false)
+    fetchChargers()
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchChargers, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const chartData = [
