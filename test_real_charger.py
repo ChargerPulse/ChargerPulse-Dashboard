@@ -1,0 +1,1 @@
+OCPP_SERVER_URL = "wss://chargerpulse-1.onrender.com"
