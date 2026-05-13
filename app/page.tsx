@@ -22,7 +22,6 @@ export default function Dashboard() {
       try {
         const res = await fetch('/api/chargers')
         const data = await res.json()
-        console.log('API response:', data)
         if (Array.isArray(data) && data.length > 0) {
           setChargers(data)
           setError(null)
@@ -60,9 +59,14 @@ export default function Dashboard() {
             <h1 className="text-4xl font-bold text-gray-800 mb-2">⚡ ChargerPulse</h1>
             <p className="text-gray-600">EV Charger Uptime Analytics</p>
           </div>
-          <a href="/pricing" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
-            Upgrade
-          </a>
+          <div className="flex gap-3">
+            <a href="/alerts" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
+              🚨 Alerts
+            </a>
+            <a href="/pricing" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+              Upgrade
+            </a>
+          </div>
         </div>
 
         {error && (
