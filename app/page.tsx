@@ -11,6 +11,12 @@ interface ChargerData {
   lastUpdate: string
 }
 
+const mockChargers: ChargerData[] = [
+  { id: 'TestCharger123', uptime24h: 95.5, uptime7d: 92.3, uptime30d: 89.8, lastUpdate: '' },
+  { id: 'Charger456', uptime24h: 87.2, uptime7d: 85.1, uptime30d: 82.5, lastUpdate: '' },
+  { id: 'Charger789', uptime24h: 98.0, uptime7d: 96.5, uptime30d: 94.2, lastUpdate: '' },
+]
+
 export default function Dashboard() {
   const [chargers, setChargers] = useState<ChargerData[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,109 +26,62 @@ export default function Dashboard() {
       try {
         const res = await fetch('/api/chargers')
         const data = await res.json()
-        if (data && Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
           setChargers(data)
         } else {
-          // Fall back to mock data if API fails
-          setChargers([
-            {
-              id: 'TestCharger123',
-              uptime24h: 95.5,
-              uptime7d: 92.3,
-              uptime30d: 89.8,
-              lastUpdate: new Date().toLocaleTimeString()
-            },
-            {
-              id: 'Charger456',
-              uptime24h: 87.2,
-              uptime7d: 85.1,
-              uptime30d: 82.5,
-              lastUpdate: new Date().toLocaleTimeString()
-            },
-            {
-              id: 'Charger789',
-              uptime24h: 98.0,
-              uptime7d: 96.5,
-              uptime30d: 94.2,
-              lastUpdate: new Date().toLocaleTimeString()
-            }
-          ])
+          setChargers(mockChargers.map(c => ({ ...c, lastUpdate: new Date().toLocaleTimeString() })))
         }
-      } catch (error) {
-        console.log('Using mock data (Supabase unreachable locally)')
-        // Use mock data
-        setChargers([
-          {
-            id: 'TestCharger123',
-            uptime24h: 95.5,
-            uptime7d: 92.3,
-            uptime30d: 89.8,
-            lastUpdate: new Date().toLocaleTimeString()
-          },
-          {
-            id: 'Charger456',
-            uptime24h: 87.2,
-            uptime7d: 85.1,
-            uptime30d: 82.5,
-            lastUpdate: new Date().toLocaleTimeString()
-          },
-          {
-            id: 'Charger789',
-            uptime24h: 98.0,
-            uptime7d: 96.5,
-            uptime30d: 94.2,
-            lastUpdate: new Date().toLocaleTimeString()
-          }
-        ])
+      } catch {
+        setChargers(mockChargers.map(c => ({ ...c, lastUpdate: new Date().toLocaleTimeString() })))
       }
       setLoading(false)
     }
 
     fetchChargers()
-    
-    // Refresh every 30 seconds
     const interval = setInterval(fetchChargers, 30000)
     return () => clearInterval(interval)
   }, [])
 
+  const avg = (key: keyof ChargerData) =>
+    chargers.length > 0
+      ? (chargers.reduce((a, c) => a + (c[key] as number), 0) / chargers.length).toFixed(1)
+      : '0'
+
   const chartData = [
-    { name: '24h', value: chargers.length > 0 ? (chargers.reduce((a, c) => a + c.uptime24h, 0) / chargers.length).toFixed(1) : 0 },
-    { name: '7d', value: chargers.length > 0 ? (chargers.reduce((a, c) => a + c.uptime7d, 0) / chargers.length).toFixed(1) : 0 },
-    { name: '30d', value: chargers.length > 0 ? (chargers.reduce((a, c) => a + c.uptime30d, 0) / chargers.length).toFixed(1) : 0 }
+    { name: '24h', value: parseFloat(avg('uptime24h')) },
+    { name: '7d', value: parseFloat(avg('uptime7d')) },
+    { name: '30d', value: parseFloat(avg('uptime30d')) },
   ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">⚡ ChargerPulse</h1>
-          <p className="text-gray-600">EV Charger Uptime Analytics</p>
+
+        <div className="mb-12 flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">⚡ ChargerPulse</h1>
+            <p className="text-gray-600">EV Charger Uptime Analytics</p>
+          </div>
+          <a href="/pricing" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+            Upgrade
+          </a>
         </div>
 
-        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-gray-500 text-sm font-semibold mb-2">24h Uptime</h2>
-            <p className="text-3xl font-bold text-green-600">
-              {chargers.length > 0 ? (chargers.reduce((a, c) => a + c.uptime24h, 0) / chargers.length).toFixed(1) : 0}%
-            </p>
+            <p className="text-3xl font-bold text-green-600">{avg('uptime24h')}%</p>
           </div>
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-gray-500 text-sm font-semibold mb-2">7d Uptime</h2>
-            <p className="text-3xl font-bold text-blue-600">
-              {chargers.length > 0 ? (chargers.reduce((a, c) => a + c.uptime7d, 0) / chargers.length).toFixed(1) : 0}%
-            </p>
+            <p className="text-3xl font-bold text-blue-600">{avg('uptime7d')}%</p>
           </div>
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-gray-500 text-sm font-semibold mb-2">30d Uptime</h2>
-            <p className="text-3xl font-bold text-indigo-600">
-              {chargers.length > 0 ? (chargers.reduce((a, c) => a + c.uptime30d, 0) / chargers.length).toFixed(1) : 0}%
-            </p>
+            <p className="text-3xl font-bold text-indigo-600">{avg('uptime30d')}%</p>
           </div>
         </div>
 
-        {/* Charger List */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Connected Chargers</h2>
           {loading ? (
@@ -167,7 +126,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Chart */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Average Uptime Trend</h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -181,11 +139,8 @@ export default function Dashboard() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+
       </div>
     </div>
   )
 }
-  <a href="/pricing" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
-    Upgrade
-  </a>
-</div>
