@@ -5,34 +5,32 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 interface ChargerData {
   id: string
+  nickname: string
   uptime24h: number
   uptime7d: number
   uptime30d: number
   lastUpdate: string
 }
 
-const mockChargers: ChargerData[] = [
-  { id: 'TestCharger123', uptime24h: 95.5, uptime7d: 92.3, uptime30d: 89.8, lastUpdate: '' },
-  { id: 'Charger456', uptime24h: 87.2, uptime7d: 85.1, uptime30d: 82.5, lastUpdate: '' },
-  { id: 'Charger789', uptime24h: 98.0, uptime7d: 96.5, uptime30d: 94.2, lastUpdate: '' },
-]
-
 export default function Dashboard() {
   const [chargers, setChargers] = useState<ChargerData[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchChargers = async () => {
       try {
         const res = await fetch('/api/chargers')
         const data = await res.json()
+        console.log('API response:', data)
         if (Array.isArray(data) && data.length > 0) {
           setChargers(data)
+          setError(null)
         } else {
-          setChargers(mockChargers.map(c => ({ ...c, lastUpdate: new Date().toLocaleTimeString() })))
+          setError('No chargers found — API returned: ' + JSON.stringify(data))
         }
-      } catch {
-        setChargers(mockChargers.map(c => ({ ...c, lastUpdate: new Date().toLocaleTimeString() })))
+      } catch (err) {
+        setError('Fetch failed: ' + String(err))
       }
       setLoading(false)
     }
@@ -67,6 +65,12 @@ export default function Dashboard() {
           </a>
         </div>
 
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Debug info:</strong> {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-gray-500 text-sm font-semibold mb-2">24h Uptime</h2>
@@ -86,12 +90,15 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Connected Chargers</h2>
           {loading ? (
             <p className="text-gray-500">Loading...</p>
+          ) : chargers.length === 0 ? (
+            <p className="text-gray-500">No chargers connected yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="py-3 px-4 font-semibold text-gray-700">Charger ID</th>
+                    <th className="py-3 px-4 font-semibold text-gray-700">Name</th>
                     <th className="py-3 px-4 font-semibold text-gray-700">24h Uptime</th>
                     <th className="py-3 px-4 font-semibold text-gray-700">7d Uptime</th>
                     <th className="py-3 px-4 font-semibold text-gray-700">30d Uptime</th>
@@ -102,6 +109,7 @@ export default function Dashboard() {
                   {chargers.map((charger) => (
                     <tr key={charger.id} className="border-b border-gray-200 hover:bg-gray-50">
                       <td className="py-3 px-4 text-gray-800 font-mono">{charger.id}</td>
+                      <td className="py-3 px-4 text-gray-600">{charger.nickname}</td>
                       <td className="py-3 px-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-semibold ${charger.uptime24h > 95 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                           {charger.uptime24h}%
