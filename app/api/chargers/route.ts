@@ -7,7 +7,15 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const { data: chargers } = await supabase.from('chargers').select('*')
+    const { data: chargers, error: chargersError } = await supabase
+      .from('chargers')
+      .select('id, nickname, created_at')
+
+    if (chargersError) {
+      console.error('Chargers error:', chargersError)
+      return Response.json([])
+    }
+
     if (!chargers || chargers.length === 0) return Response.json([])
 
     const now = new Date()
@@ -17,15 +25,19 @@ export async function GET() {
 
     const chargerData = await Promise.all(
       chargers.map(async (charger) => {
-        const { data: events } = await supabase
+        const { data: events, error: eventsError } = await supabase
           .from('events')
           .select('status, ts')
           .eq('cp_id', charger.id)
           .gte('ts', thirtyDaysAgo.toISOString())
+          .order('ts', { ascending: false })
+
+        if (eventsError) console.error('Events error:', eventsError)
 
         if (!events || events.length === 0) {
           return {
             id: charger.id,
+            nickname: charger.nickname,
             uptime24h: 0,
             uptime7d: 0,
             uptime30d: 0,
@@ -42,17 +54,18 @@ export async function GET() {
 
         return {
           id: charger.id,
+          nickname: charger.nickname,
           uptime24h: calcUptime(oneDayAgo),
           uptime7d: calcUptime(sevenDaysAgo),
           uptime30d: calcUptime(thirtyDaysAgo),
-          lastUpdate: new Date(events[events.length - 1].ts).toLocaleTimeString()
+          lastUpdate: new Date(events[0].ts).toLocaleTimeString()
         }
       })
     )
 
     return Response.json(chargerData)
   } catch (error) {
-    console.error('Error:', error)
+    console.error('API error:', error)
     return Response.json([])
   }
 }
