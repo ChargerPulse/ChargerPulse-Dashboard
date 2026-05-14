@@ -55,6 +55,9 @@ export default function Dashboard() {
             <p className="text-gray-600">EV Charger Uptime Analytics</p>
           </div>
           <div className="flex gap-3">
+<a href="/register" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+              ➕ Add Charger
+            </a>
             <a href="/events" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg">
               📋 Events
             </a>
