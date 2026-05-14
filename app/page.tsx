@@ -86,7 +86,17 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Connected Chargers</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Connected Chargers</h2>
+            <div className="flex gap-2">
+              <a href="/api/export?days=7" className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                ⬇️ Export 7d
+              </a>
+              <a href="/api/export?days=30" className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                ⬇️ Export 30d
+              </a>
+            </div>
+          </div>
           {loading ? (
             <p className="text-gray-500">Loading...</p>
           ) : chargers.length === 0 ? (
