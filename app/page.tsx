@@ -60,6 +60,9 @@ export default function Dashboard() {
             <p className="text-gray-600">EV Charger Uptime Analytics</p>
           </div>
           <div className="flex gap-3">
+            <a href="/register" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+              ➕ Add Charger
+            </a>
             <a href="/alerts" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
               🚨 Alerts
             </a>
@@ -67,7 +70,6 @@ export default function Dashboard() {
               Upgrade
             </a>
           </div>
-        </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
