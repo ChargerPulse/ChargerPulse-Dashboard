@@ -3,149 +3,111 @@
 import { useState } from 'react'
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    chargerId: '',
-    nickname: '',
-    location: '',
-  })
+  const [form, setForm] = useState({ chargerId: '', nickname: '', location: '' })
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
-  const handleSubmit = async () => {
-    if (!formData.chargerId || !formData.nickname) {
-      setStatus('error')
-      setMessage('Charger ID and Name are required.')
-      return
+  const inputStyle = {
+    width: '100%', background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
+    padding: '12px 16px', color: '#e2e8f0', fontSize: 14,
+    outline: 'none', boxSizing: 'border-box' as const,
+  }
+
+  const submit = async () => {
+    if (!form.chargerId || !form.nickname) {
+      setStatus('error'); setMessage('Charger ID and Name are required.'); return
     }
     setStatus('loading')
     try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const data = await res.json()
-      if (res.ok) {
-        setStatus('success')
-        setMessage(`Charger "${formData.nickname}" registered successfully!`)
-        setFormData({ chargerId: '', nickname: '', location: '' })
-      } else {
-        setStatus('error')
-        setMessage(data.error || 'Something went wrong.')
-      }
-    } catch {
-      setStatus('error')
-      setMessage('Failed to connect to server.')
-    }
+      if (res.ok) { setStatus('success'); setMessage(`"${form.nickname}" registered!`); setForm({ chargerId: '', nickname: '', location: '' }) }
+      else { setStatus('error'); setMessage(data.error || 'Something went wrong.') }
+    } catch { setStatus('error'); setMessage('Failed to connect to server.') }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="space-bg" style={{ padding: '32px', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 680, margin: '0 auto' }}>
 
-        <div className="mb-8 flex justify-between items-center">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">➕ Register Charger</h1>
-            <p className="text-gray-600">Add a new EV charger to your monitoring fleet</p>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>➕ Register Charger</h1>
+            <p style={{ color: '#64748b', fontSize: 14 }}>Add a new EV charger to your monitoring fleet</p>
           </div>
-          <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
-            Back to Dashboard
+          <a href="/" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+            ← Dashboard
           </a>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-6">
-          <h2 className="font-bold text-blue-800 mb-2">📡 OCPP Connection Details</h2>
-          <div className="bg-white rounded p-3 font-mono text-sm text-blue-900 border border-blue-200">
+        {/* OCPP info */}
+        <div style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <h2 style={{ color: '#00d4ff', fontWeight: 700, marginBottom: 8, fontSize: 14 }}>📡 OCPP Connection Details</h2>
+          <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 13, color: '#00d4ff', border: '1px solid rgba(0,212,255,0.15)' }}>
             wss://chargerpulse-1.onrender.com/YOUR_CHARGER_ID
           </div>
-          <p className="text-blue-600 text-xs mt-2">
-            Replace YOUR_CHARGER_ID with the Charger ID you register below. Protocol: OCPP 1.6
-          </p>
+          <p style={{ color: '#64748b', fontSize: 11, marginTop: 8 }}>Replace YOUR_CHARGER_ID with the ID below. Protocol: OCPP 1.6</p>
         </div>
 
         {status === 'success' && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-5 py-4 rounded-lg mb-6">
-            <strong>✅ Charger Registered!</strong>
-            <p className="text-sm mt-1">{message}</p>
+          <div style={{ background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+            <strong style={{ color: '#00ff88' }}>✅ {message}</strong>
           </div>
         )}
-
         {status === 'error' && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-5 py-4 rounded-lg mb-6">
-            <strong>Error:</strong> {message}
+          <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+            <strong style={{ color: '#ff4444' }}>❌ {message}</strong>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Charger ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.chargerId}
-              onChange={e => setFormData({ ...formData, chargerId: e.target.value.trim() })}
-              placeholder="e.g. CP-001 or DepotCharger1"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-gray-500 text-xs mt-1">Must match exactly what your charger uses to connect. No spaces.</p>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Charger Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.nickname}
-              onChange={e => setFormData({ ...formData, nickname: e.target.value })}
-              placeholder="e.g. Depot Bay 1"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="mb-8">
-            <label className="block text-gray-700 font-semibold mb-2">Location</label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={e => setFormData({ ...formData, location: e.target.value })}
-              placeholder="e.g. Johannesburg Depot, Gate 2"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={status === 'loading'}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-4 px-6 rounded-lg text-lg"
-          >
+        {/* Form */}
+        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
+          {[
+            { label: 'Charger ID', key: 'chargerId', placeholder: 'e.g. CP-001 or DepotCharger1', hint: 'Must match exactly what your charger uses. No spaces.' },
+            { label: 'Charger Name', key: 'nickname', placeholder: 'e.g. Depot Bay 1', hint: '' },
+            { label: 'Location', key: 'location', placeholder: 'e.g. Johannesburg Depot, Gate 2', hint: '' },
+          ].map(f => (
+            <div key={f.key} style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
+                {f.label}{f.key !== 'location' && <span style={{ color: '#ff4444' }}> *</span>}
+              </label>
+              <input type="text" value={form[f.key as keyof typeof form]}
+                onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                placeholder={f.placeholder} style={inputStyle} />
+              {f.hint && <p style={{ color: '#475569', fontSize: 11, marginTop: 6 }}>{f.hint}</p>}
+            </div>
+          ))}
+          <button onClick={submit} disabled={status === 'loading'} style={{
+            width: '100%', padding: 14, borderRadius: 10, fontSize: 14, fontWeight: 800,
+            cursor: status === 'loading' ? 'not-allowed' : 'pointer', border: 'none',
+            background: 'linear-gradient(135deg, #00d4ff, #a855f7)', color: 'white',
+            boxShadow: '0 0 20px rgba(0,212,255,0.3)',
+          }}>
             {status === 'loading' ? '⏳ Registering...' : '➕ Register Charger'}
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">📋 How to Connect Your Charger</h2>
-          <div className="space-y-3">
+        {/* Steps */}
+        <div className="card" style={{ padding: 28 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', marginBottom: 20 }}>📋 How to Connect Your Charger</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              ['1', 'Register your charger above with a unique ID'],
-              ['2', 'Log into your charger admin panel'],
-              ['3', 'Find the OCPP Central System URL setting'],
-              ['4', 'Enter: wss://chargerpulse-1.onrender.com/YOUR_CHARGER_ID'],
-              ['5', 'Set OCPP version to 1.6'],
-              ['6', 'Save and restart your charger'],
-              ['7', 'Your charger will appear on the dashboard within 60 seconds'],
-            ].map(([num, text]) => (
-              <div key={num} className="flex items-start gap-3">
-                <span className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  {num}
-                </span>
-                <p className="text-gray-700 pt-0.5">{text}</p>
+              'Register your charger above with a unique ID',
+              'Log into your charger admin panel',
+              'Find the OCPP Central System URL setting',
+              'Enter: wss://chargerpulse-1.onrender.com/YOUR_CHARGER_ID',
+              'Set OCPP version to 1.6',
+              'Save and restart your charger',
+              'Your charger will appear on the dashboard within 60 seconds',
+            ].map((text, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #00d4ff, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'white', flexShrink: 0 }}>{i + 1}</span>
+                <p style={{ color: '#94a3b8', paddingTop: 3, fontSize: 13 }}>{text}</p>
               </div>
             ))}
           </div>
         </div>
-
       </div>
     </div>
   )

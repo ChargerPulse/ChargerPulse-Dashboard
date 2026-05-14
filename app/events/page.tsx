@@ -10,9 +10,16 @@ interface Event {
   ts: string
 }
 
-interface Charger {
-  id: string
-  nickname: string
+interface Charger { id: string; nickname: string }
+
+const statusStyle = (s: string) => {
+  switch(s) {
+    case 'Available': return { color: '#00ff88', bg: 'rgba(0,255,136,0.1)', border: 'rgba(0,255,136,0.3)', icon: '✅' }
+    case 'Occupied': case 'Charging': return { color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)', icon: '⚡' }
+    case 'Faulted': return { color: '#ff4444', bg: 'rgba(255,68,68,0.1)', border: 'rgba(255,68,68,0.3)', icon: '🚨' }
+    case 'Unavailable': return { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', icon: '⚠️' }
+    default: return { color: '#64748b', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', icon: '💤' }
+  }
 }
 
 export default function EventsPage() {
@@ -22,157 +29,101 @@ export default function EventsPage() {
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
-        const [eventsRes, chargersRes] = await Promise.all([
-          fetch('/api/events'),
-          fetch('/api/chargers')
-        ])
-        const eventsData = await eventsRes.json()
-        const chargersData = await chargersRes.json()
-        if (Array.isArray(eventsData)) setEvents(eventsData)
-        if (Array.isArray(chargersData)) setChargers(chargersData)
-      } catch (err) {
-        console.error('Failed to fetch:', err)
-      }
+        const [e, c] = await Promise.all([fetch('/api/events'), fetch('/api/chargers')])
+        const ed = await e.json(); const cd = await c.json()
+        if (Array.isArray(ed)) setEvents(ed)
+        if (Array.isArray(cd)) setChargers(cd)
+      } catch {}
       setLoading(false)
     }
-
-    fetchData()
-    const interval = setInterval(fetchData, 30000)
-    return () => clearInterval(interval)
+    load()
+    const i = setInterval(load, 30000)
+    return () => clearInterval(i)
   }, [])
 
-  const filtered = filter === 'all'
-    ? events
-    : events.filter(e => e.cp_id === filter)
-
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'Available':
-        return 'bg-green-100 text-green-700'
-      case 'Occupied':
-      case 'Charging':
-        return 'bg-blue-100 text-blue-700'
-      case 'Faulted':
-        return 'bg-red-100 text-red-700'
-      case 'Unavailable':
-        return 'bg-yellow-100 text-yellow-700'
-      case 'Offline':
-        return 'bg-gray-100 text-gray-600'
-      default:
-        return 'bg-gray-100 text-gray-600'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Available': return '✅'
-      case 'Occupied':
-      case 'Charging': return '⚡'
-      case 'Faulted': return '🚨'
-      case 'Unavailable': return '⚠️'
-      case 'Offline': return '💤'
-      default: return '❓'
-    }
-  }
-
-  const formatTime = (ts: string) => new Date(ts).toLocaleString()
-
-  const getNickname = (cp_id: string) => {
-    const charger = chargers.find(c => c.id === cp_id)
-    return charger ? charger.nickname : cp_id
-  }
+  const filtered = filter === 'all' ? events : events.filter(e => e.cp_id === filter)
+  const getNick = (id: string) => chargers.find(c => c.id === id)?.nickname || id
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="space-bg" style={{ padding: '32px', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-        <div className="mb-8 flex justify-between items-center">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">📋 Events Feed</h1>
-            <p className="text-gray-600">Live log of all OCPP charger events</p>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>📋 Events Feed</h1>
+            <p style={{ color: '#64748b', fontSize: 14 }}>Live log of all OCPP charger events</p>
           </div>
-          <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+          <a href="/" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
             ← Dashboard
           </a>
         </div>
 
-        {/* Stats bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {['Available', 'Occupied', 'Faulted', 'Unavailable'].map(s => (
-            <div key={s} className="bg-white rounded-lg shadow p-4 text-center">
-              <p className="text-2xl font-bold text-gray-800">
-                {events.filter(e => e.status === s).length}
-              </p>
-              <p className={`text-sm font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${getStatusStyle(s)}`}>
-                {getStatusIcon(s)} {s}
-              </p>
-            </div>
-          ))}
+        {/* Status counts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          {['Available', 'Occupied', 'Faulted', 'Unavailable'].map(s => {
+            const st = statusStyle(s)
+            return (
+              <div key={s} className="card" style={{ padding: '20px', textAlign: 'center' }}>
+                <p style={{ fontSize: 36, fontWeight: 800, color: st.color }}>{events.filter(e => e.status === s).length}</p>
+                <p style={{ color: st.color, fontSize: 11, letterSpacing: 1, marginTop: 4 }}>{st.icon} {s.toUpperCase()}</p>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Filter by charger */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg font-semibold ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-          >
-            All Chargers ({events.length})
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <button onClick={() => setFilter('all')} style={{ padding: '7px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: filter === 'all' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.08)', background: filter === 'all' ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.03)', color: filter === 'all' ? '#00d4ff' : '#64748b' }}>
+            ALL ({events.length})
           </button>
           {chargers.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setFilter(c.id)}
-              className={`px-4 py-2 rounded-lg font-semibold ${filter === c.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-            >
+            <button key={c.id} onClick={() => setFilter(c.id)} style={{ padding: '7px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: filter === c.id ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.08)', background: filter === c.id ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.03)', color: filter === c.id ? '#00d4ff' : '#64748b' }}>
               {c.nickname} ({events.filter(e => e.cp_id === c.id).length})
             </button>
           ))}
         </div>
 
-        {/* Events table */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            {filtered.length} Events {filter !== 'all' && `for ${getNickname(filter)}`}
-          </h2>
-          {loading ? (
-            <p className="text-gray-500">Loading events...</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-gray-500">No events found.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="py-3 px-4 font-semibold text-gray-700">Time</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">Charger</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">Connector</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">Status</th>
+        {/* Table */}
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>{filtered.length} Events</span>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                {['Time', 'Charger', 'Connector', 'Status'].map(h => (
+                  <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, color: '#475569', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: '#475569' }}>Loading events...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No events found.</td></tr>
+              ) : filtered.map(ev => {
+                const st = statusStyle(ev.status)
+                return (
+                  <tr key={ev.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <td style={{ padding: '12px 20px', color: '#64748b', fontSize: 12, fontFamily: 'monospace' }}>{new Date(ev.ts).toLocaleString()}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <p style={{ fontFamily: 'monospace', color: '#00d4ff', fontSize: 12 }}>{ev.cp_id}</p>
+                      <p style={{ color: '#64748b', fontSize: 11 }}>{getNick(ev.cp_id)}</p>
+                    </td>
+                    <td style={{ padding: '12px 20px', color: '#64748b', fontSize: 12 }}>#{ev.connector_id}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, color: st.color, background: st.bg, border: `1px solid ${st.border}` }}>
+                        {st.icon} {ev.status}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((event) => (
-                    <tr key={event.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-500 text-sm">{formatTime(event.ts)}</td>
-                      <td className="py-3 px-4">
-                        <p className="font-mono text-gray-800 text-sm">{event.cp_id}</p>
-                        <p className="text-gray-500 text-xs">{getNickname(event.cp_id)}</p>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">#{event.connector_id}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusStyle(event.status)}`}>
-                          {getStatusIcon(event.status)} {event.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-
       </div>
     </div>
   )
