@@ -15,7 +15,6 @@ interface ChargerData {
 export default function Dashboard() {
   const [chargers, setChargers] = useState<ChargerData[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchChargers = async () => {
@@ -24,16 +23,12 @@ export default function Dashboard() {
         const data = await res.json()
         if (Array.isArray(data) && data.length > 0) {
           setChargers(data)
-          setError(null)
-        } else {
-          setError('No chargers found — API returned: ' + JSON.stringify(data))
         }
       } catch (err) {
-        setError('Fetch failed: ' + String(err))
+        console.error('Fetch failed:', err)
       }
       setLoading(false)
     }
-
     fetchChargers()
     const interval = setInterval(fetchChargers, 30000)
     return () => clearInterval(interval)
@@ -70,12 +65,7 @@ export default function Dashboard() {
               Upgrade
             </a>
           </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            <strong>Debug info:</strong> {error}
-          </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
@@ -97,7 +87,7 @@ export default function Dashboard() {
           {loading ? (
             <p className="text-gray-500">Loading...</p>
           ) : chargers.length === 0 ? (
-            <p className="text-gray-500">No chargers connected yet.</p>
+            <p className="text-gray-500">No chargers connected yet. <a href="/register" className="text-blue-600 underline">Add one!</a></p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
