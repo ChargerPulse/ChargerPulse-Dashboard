@@ -117,7 +117,11 @@ export default function Dashboard() {
                 <tbody>
                   {chargers.map((charger) => (
                     <tr key={charger.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-800 font-mono">{charger.id}</td>
+                      <td className="py-3 px-4">
+  <a href={`/chargers/${charger.id}`} className="text-indigo-600 hover:text-indigo-800 font-mono hover:underline">
+    {charger.id}
+  </a>
+</td>
                       <td className="py-3 px-4 text-gray-600">{charger.nickname}</td>
                       <td className="py-3 px-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-semibold ${charger.uptime24h > 95 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
