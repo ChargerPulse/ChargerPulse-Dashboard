@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface ChargerData {
   id: string
@@ -12,26 +12,38 @@ interface ChargerData {
   lastUpdate: string
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{ background: 'rgba(13,20,33,0.95)', border: '1px solid rgba(0,212,255,0.3)', borderRadius: 8, padding: '8px 14px' }}>
+        <p style={{ color: '#64748b', fontSize: 11 }}>{label}</p>
+        <p style={{ color: '#00d4ff', fontWeight: 700 }}>{payload[0].value}%</p>
+      </div>
+    )
+  }
+  return null
+}
+
 export default function Dashboard() {
   const [chargers, setChargers] = useState<ChargerData[]>([])
   const [loading, setLoading] = useState(true)
+  const [time, setTime] = useState(new Date())
 
   useEffect(() => {
     const fetchChargers = async () => {
       try {
         const res = await fetch('/api/chargers')
         const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
-          setChargers(data)
-        }
+        if (Array.isArray(data) && data.length > 0) setChargers(data)
       } catch (err) {
         console.error('Fetch failed:', err)
       }
       setLoading(false)
     }
     fetchChargers()
-    const interval = setInterval(fetchChargers, 30000)
-    return () => clearInterval(interval)
+    const dataInterval = setInterval(fetchChargers, 30000)
+    const timeInterval = setInterval(() => setTime(new Date()), 1000)
+    return () => { clearInterval(dataInterval); clearInterval(timeInterval) }
   }, [])
 
   const avg = (key: keyof ChargerData) =>
@@ -40,125 +52,195 @@ export default function Dashboard() {
       : '0'
 
   const chartData = [
-    { name: '24h', value: parseFloat(avg('uptime24h')) },
-    { name: '7d', value: parseFloat(avg('uptime7d')) },
     { name: '30d', value: parseFloat(avg('uptime30d')) },
+    { name: '7d', value: parseFloat(avg('uptime7d')) },
+    { name: '24h', value: parseFloat(avg('uptime24h')) },
   ]
 
+  const getUptimeColor = (val: number) => {
+    if (val >= 95) return '#00ff88'
+    if (val >= 80) return '#f59e0b'
+    return '#ff4444'
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #080c14 0%, #0d1421 50%, #080c14 100%)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
 
-        <div className="mb-12 flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">⚡ ChargerPulse</h1>
-            <p className="text-gray-600">EV Charger Uptime Analytics</p>
-          </div>
-          <div className="flex gap-3">
-<a href="/register" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
-              ➕ Add Charger
-            </a>
-            <a href="/events" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg">
-              📋 Events
-            </a>
-            <a href="/alerts" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">
-              🚨 Alerts
-            </a>
-            <a href="/pricing" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
-              Upgrade
-            </a>
-          </div>
-        </div>
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0 }} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-gray-500 text-sm font-semibold mb-2">24h Uptime</h2>
-            <p className="text-3xl font-bold text-green-600">{avg('uptime24h')}%</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-gray-500 text-sm font-semibold mb-2">7d Uptime</h2>
-            <p className="text-3xl font-bold text-blue-600">{avg('uptime7d')}%</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-gray-500 text-sm font-semibold mb-2">30d Uptime</h2>
-            <p className="text-3xl font-bold text-indigo-600">{avg('uptime30d')}%</p>
-          </div>
-        </div>
+      <div style={{ maxWidth: 1400, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Connected Chargers</h2>
-            <div className="flex gap-2">
-              <a href="/api/export?days=7" className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-                ⬇️ Export 7d
-              </a>
-              <a href="/api/export?days=30" className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-                ⬇️ Export 30d
-              </a>
+        {/* TOP NAV */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, paddingBottom: 20, borderBottom: '1px solid rgba(0,212,255,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'linear-gradient(135deg, #00d4ff, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 0 20px rgba(0,212,255,0.4)' }}>⚡</div>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: '#e2e8f0', textTransform: 'uppercase' }}>ChargerPulse</h1>
+              <p style={{ fontSize: 10, color: '#00d4ff', letterSpacing: 3, textTransform: 'uppercase' }}>EV Intelligence Platform</p>
             </div>
           </div>
-          {loading ? (
-            <p className="text-gray-500">Loading...</p>
-          ) : chargers.length === 0 ? (
-            <p className="text-gray-500">No chargers connected yet. <a href="/register" className="text-blue-600 underline">Add one!</a></p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {[
+              { href: '/register', label: '+ ADD', color: '#00ff88', bg: 'rgba(0,255,136,0.1)', border: 'rgba(0,255,136,0.3)' },
+              { href: '/events', label: '◈ EVENTS', color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)' },
+              { href: '/alerts', label: '⚠ ALERTS', color: '#ff4444', bg: 'rgba(255,68,68,0.1)', border: 'rgba(255,68,68,0.3)' },
+              { href: '/pricing', label: '↑ UPGRADE', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
+            ].map(btn => (
+              <a key={btn.href} href={btn.href} style={{
+                padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                letterSpacing: 1.5, textDecoration: 'none', color: btn.color,
+                background: btn.bg, border: `1px solid ${btn.border}`,
+              }}>{btn.label}</a>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: 20, fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace', letterSpacing: 2 }}>
+              {time.toLocaleTimeString()}
+            </p>
+            <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>
+              {time.toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+        </div>
+
+        {/* KPI CARDS */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          {[
+            { label: 'FLEET UPTIME 24H', value: `${avg('uptime24h')}%`, color: getUptimeColor(parseFloat(avg('uptime24h'))), icon: '◉', sub: 'Last 24 hours' },
+            { label: 'FLEET UPTIME 7D', value: `${avg('uptime7d')}%`, color: getUptimeColor(parseFloat(avg('uptime7d'))), icon: '◈', sub: 'Last 7 days' },
+            { label: 'FLEET UPTIME 30D', value: `${avg('uptime30d')}%`, color: getUptimeColor(parseFloat(avg('uptime30d'))), icon: '◇', sub: 'Last 30 days' },
+            { label: 'ACTIVE CHARGERS', value: chargers.length.toString(), color: '#00d4ff', icon: '⚡', sub: 'Connected nodes' },
+          ].map((kpi, i) => (
+            <div key={i} style={{
+              background: 'rgba(13,20,33,0.85)', borderRadius: 12, padding: '20px 24px',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 0 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${kpi.color}, transparent)`, opacity: 0.6 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ fontSize: 9, color: '#64748b', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{kpi.label}</p>
+                  <p style={{ fontSize: 36, fontWeight: 800, color: kpi.color, lineHeight: 1, textShadow: `0 0 20px ${kpi.color}80` }}>{kpi.value}</p>
+                  <p style={{ fontSize: 10, color: '#334155', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
+                </div>
+                <span style={{ fontSize: 24, color: kpi.color, opacity: 0.4 }}>{kpi.icon}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* MAIN GRID */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20, marginBottom: 20 }}>
+
+          {/* CHARGERS TABLE */}
+          <div style={{ background: 'rgba(13,20,33,0.85)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(0,212,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#e2e8f0' }}>⚡ Connected Chargers</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[7, 30].map(d => (
+                  <a key={d} href={`/api/export?days=${d}`} style={{
+                    padding: '5px 12px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                    letterSpacing: 1, color: '#64748b', background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none',
+                  }}>⬇ {d}D</a>
+                ))}
+              </div>
+            </div>
+
+            {loading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#334155', letterSpacing: 2, fontSize: 11 }}>LOADING...</div>
+            ) : chargers.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center' }}>
+                <p style={{ color: '#334155', marginBottom: 12 }}>No chargers connected</p>
+                <a href="/register" style={{ color: '#00d4ff', fontSize: 12 }}>+ Register your first charger</a>
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="py-3 px-4 font-semibold text-gray-700">Charger ID</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">Name</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">24h Uptime</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">7d Uptime</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">30d Uptime</th>
-                    <th className="py-3 px-4 font-semibold text-gray-700">Last Update</th>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    {['CHARGER ID', 'NAME', '24H', '7D', '30D', 'LAST SEEN'].map(h => (
+                      <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 9, color: '#334155', letterSpacing: 2, fontWeight: 700 }}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {chargers.map((charger) => (
-                    <tr key={charger.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-  <a href={`/chargers/${charger.id}`} className="text-indigo-600 hover:text-indigo-800 font-mono hover:underline">
-    {charger.id}
-  </a>
-</td>
-                      <td className="py-3 px-4 text-gray-600">{charger.nickname}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${charger.uptime24h > 95 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {charger.uptime24h}%
-                        </span>
+                    <tr key={charger.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.03)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <td style={{ padding: '14px 20px' }}>
+                        <a href={`/chargers/${charger.id}`} style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: 12, textDecoration: 'none', letterSpacing: 1 }}>
+                          {charger.id}
+                        </a>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${charger.uptime7d > 95 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {charger.uptime7d}%
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${charger.uptime30d > 95 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {charger.uptime30d}%
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-gray-500 text-sm">{charger.lastUpdate}</td>
+                      <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: 12 }}>{charger.nickname}</td>
+                      {[charger.uptime24h, charger.uptime7d, charger.uptime30d].map((val, j) => (
+                        <td key={j} style={{ padding: '14px 20px' }}>
+                          <span style={{
+                            padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                            color: getUptimeColor(val),
+                            background: `${getUptimeColor(val)}18`,
+                            border: `1px solid ${getUptimeColor(val)}40`,
+                          }}>{val}%</span>
+                        </td>
+                      ))}
+                      <td style={{ padding: '14px 20px', color: '#334155', fontSize: 11, fontFamily: 'monospace' }}>{charger.lastUpdate}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+
+          {/* RIGHT PANEL */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* UPTIME CHART */}
+            <div style={{ background: 'rgba(13,20,33,0.85)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: 20, flex: 1 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#e2e8f0', marginBottom: 16 }}>◈ Uptime Trend</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" tick={{ fill: '#334155', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fill: '#334155', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area type="monotone" dataKey="value" stroke="#00d4ff" strokeWidth={2} fill="url(#cyanGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          )}
+
+            {/* SYSTEM STATUS */}
+            <div style={{ background: 'rgba(13,20,33,0.85)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: 20 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#e2e8f0', marginBottom: 16 }}>◉ System Status</p>
+              {[
+                { label: 'OCPP Server', status: 'ONLINE', color: '#00ff88' },
+                { label: 'Database', status: 'CONNECTED', color: '#00ff88' },
+                { label: 'Alert Engine', status: 'ACTIVE', color: '#00ff88' },
+                { label: 'Email Alerts', status: 'ENABLED', color: '#00d4ff' },
+              ].map(s => (
+                <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>{s.label}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: s.color, letterSpacing: 1, padding: '3px 8px', background: `${s.color}18`, borderRadius: 4, border: `1px solid ${s.color}40` }}>{s.status}</span>
+                </div>
+              ))}
+            </div>
+
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Average Uptime Trend</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="value" stroke="#4f46e5" strokeWidth={2} name="Uptime %" />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* FOOTER */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 2 }}>CHARGERPULSE v1.0 — EV INTELLIGENCE PLATFORM</p>
+          <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 1 }}>DATA REFRESHES EVERY 30S</p>
         </div>
 
       </div>
