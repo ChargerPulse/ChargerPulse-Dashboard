@@ -23,16 +23,18 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login')
-  const isApiRoute = request.nextUrl.pathname.startsWith('/api')
-  const isPublicPage = request.nextUrl.pathname.startsWith('/pricing')
+  const path = request.nextUrl.pathname
+  const isAuthPage = path.startsWith('/login')
+  const isApiRoute = path.startsWith('/api')
+  const isPublicPage = path === '/' || path.startsWith('/pricing')
+  const isDashboard = path.startsWith('/dashboard')
 
   if (!user && !isAuthPage && !isApiRoute && !isPublicPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (user && isAuthPage) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return supabaseResponse
