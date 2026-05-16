@@ -76,7 +76,7 @@ async function sendWelcomeEmail(customerEmail: string, customerName: string, pla
   }
 }
 
-async function async function recordSubscription(customerEmail: string, planName: string, customerId: string) {
+async function recordSubscription(customerEmail: string, planName: string, customerId: string) {
   try {
     const adminClient = getAdminClient()
     const { data: users } = await adminClient.auth.admin.listUsers()
