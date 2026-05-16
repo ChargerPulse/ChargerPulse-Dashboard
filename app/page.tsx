@@ -30,7 +30,7 @@ export default function LandingPage() {
 
   const plans = [
     { name: 'Pro', price: '$5', desc: 'Monitor 1 charger', color: '#00d4ff', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/44db6a87-af91-43ff-96db-613d1db2f061', features: ['1 charger', 'Real-time alerts', 'Basic analytics', 'Email support'] },
-    { name: 'Plus', price: '$15' desc: 'Monitor 5 chargers', color: '#a855f7', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/b0df42fc-f1a6-4fc8-b7d3-ed43878790ec', features: ['5 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'], popular: true },
+    { name: 'Plus', price: '$15', desc: 'Monitor 5 chargers', color: '#a855f7', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/b0df42fc-f1a6-4fc8-b7d3-ed43878790ec', features: ['5 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'], popular: true },
     { name: 'Enterprise', price: '$50', desc: 'Unlimited chargers', color: '#00ff88', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/1a1cc852-4a6c-4b99-9d14-caaeba115d17', features: ['Unlimited chargers', 'Real-time alerts', 'Custom analytics', 'Dedicated support'] },
   ]
 
