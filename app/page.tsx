@@ -47,7 +47,6 @@ export default function LandingPage() {
           <a href="/login" className="hide-mobile" style={{ color: '#64748b', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Sign In</a>
           <a href="/login" style={{ background: 'linear-gradient(135deg, #00d4ff, #a855f7)', color: 'white', padding: '9px 20px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>Get Started Free</a>
         </div>
-        </div>
       </nav>
 
       {/* HERO */}
