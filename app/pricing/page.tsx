@@ -73,6 +73,11 @@ export default function PricingPage() {
         <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginBottom: 16 }}>
           All plans include 7-day free trial. Cancel anytime.
         </p>
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <a href="/terms" style={{ color: '#475569', fontSize: 12, textDecoration: 'none', marginRight: 16 }}>Terms of Service</a>
+          <a href="/privacy" style={{ color: '#475569', fontSize: 12, textDecoration: 'none' }}>Privacy Policy</a>
+        </div>
+        </p>
         <div style={{ textAlign: 'center' }}>
           <a href="/" style={{ color: '#00d4ff', fontSize: 13, textDecoration: 'none' }}>Back to Dashboard</a>
         </div>
