@@ -6,7 +6,7 @@ import { createClient } from '../../lib/supabase'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
   const [message, setMessage] = useState('')
 
@@ -24,15 +24,31 @@ export default function LoginPage() {
   }
 
   const handleSubmit = async () => {
-    if (!email || !password) {
+    if (!email) {
       setStatus('error')
-      setMessage('Email and password are required.')
+      setMessage('Email is required.')
+      return
+    }
+    if (mode !== 'forgot' && !password) {
+      setStatus('error')
+      setMessage('Password is required.')
       return
     }
     setStatus('loading')
     const supabase = createClient()
 
-    if (mode === 'signup') {
+    if (mode === 'forgot') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://chargerpulse-dashboard.onrender.com/reset-password',
+      })
+      if (error) {
+        setStatus('error')
+        setMessage(error.message)
+      } else {
+        setStatus('success')
+        setMessage('Password reset email sent! Check your inbox.')
+      }
+    } else if (mode === 'signup') {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) {
         setStatus('error')
@@ -47,7 +63,7 @@ export default function LoginPage() {
         setStatus('error')
         setMessage(error.message)
       } else {
-        window.location.href = '/'
+        window.location.href = '/dashboard'
       }
     }
   }
@@ -64,7 +80,7 @@ export default function LoginPage() {
 
         <div className="card" style={{ padding: 32 }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0', marginBottom: 24, textAlign: 'center' }}>
-            {mode === 'login' ? 'Welcome back' : 'Create your account'}
+            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create your account' : 'Reset your password'}
           </h2>
 
           {status === 'error' && (
@@ -88,15 +104,27 @@ export default function LoginPage() {
             style={inputStyle}
           />
 
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            style={inputStyle}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-          />
+          {mode !== 'forgot' && (
+            <>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={inputStyle}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              />
+            </>
+          )}
+
+          {mode === 'login' && (
+            <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 16 }}>
+              <button onClick={() => { setMode('forgot'); setStatus('idle') }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 12 }}>
+                Forgot password?
+              </button>
+            </div>
+          )}
 
           <button
             onClick={handleSubmit}
@@ -108,16 +136,28 @@ export default function LoginPage() {
               color: 'white', boxShadow: '0 0 20px rgba(0,212,255,0.3)', marginTop: 8,
             }}
           >
-            {status === 'loading' ? '⏳ Please wait...' : mode === 'login' ? '🚀 Sign In' : '✨ Create Account'}
+            {status === 'loading' ? '⏳ Please wait...' :
+             mode === 'login' ? '🚀 Sign In' :
+             mode === 'signup' ? '✨ Create Account' :
+             '📧 Send Reset Email'}
           </button>
 
-          <div style={{ textAlign: 'center', marginTop: 20 }}>
-            <button
-              onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setStatus('idle') }}
-              style={{ background: 'none', border: 'none', color: '#00d4ff', cursor: 'pointer', fontSize: 13 }}
-            >
-              {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
+          <div style={{ textAlign: 'center', marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {mode === 'login' && (
+              <button onClick={() => { setMode('signup'); setStatus('idle') }} style={{ background: 'none', border: 'none', color: '#00d4ff', cursor: 'pointer', fontSize: 13 }}>
+                Don't have an account? Sign up
+              </button>
+            )}
+            {mode === 'signup' && (
+              <button onClick={() => { setMode('login'); setStatus('idle') }} style={{ background: 'none', border: 'none', color: '#00d4ff', cursor: 'pointer', fontSize: 13 }}>
+                Already have an account? Sign in
+              </button>
+            )}
+            {mode === 'forgot' && (
+              <button onClick={() => { setMode('login'); setStatus('idle') }} style={{ background: 'none', border: 'none', color: '#00d4ff', cursor: 'pointer', fontSize: 13 }}>
+                Back to Sign In
+              </button>
+            )}
           </div>
         </div>
 
