@@ -76,7 +76,31 @@ async function sendWelcomeEmail(customerEmail: string, customerName: string, pla
   }
 }
 
-async function recordSubscription(customerEmail: string, planName: string, customerId: string) {
+async function async function recordSubscription(customerEmail: string, planName: string, customerId: string) {
+  try {
+    const adminClient = getAdminClient()
+    const { data: users } = await adminClient.auth.admin.listUsers()
+    const user = users?.users?.find(u => u.email === customerEmail)
+
+    if (user) {
+      const plan = planName.toLowerCase().includes('enterprise') ? 'Enterprise' :
+                   planName.toLowerCase().includes('plus') ? 'Plus' : 'Pro'
+
+      await adminClient.from('user_subscriptions').upsert({
+        user_id: user.id,
+        status: 'active',
+        plan: plan,
+        subscribed_at: new Date().toISOString(),
+        lemon_squeezy_customer_id: customerId,
+      })
+      console.log(`✅ Subscription recorded for ${customerEmail} — plan: ${plan}`)
+    } else {
+      console.log(`⚠️ No user found for ${customerEmail}`)
+    }
+  } catch (err) {
+    console.error('❌ Failed to record subscription:', err)
+  }
+}(customerEmail: string, planName: string, customerId: string) {
   try {
     const { data: users } = await getAdminClient().auth.admin.listUsers()
     const user = users?.users?.find(u => u.email === customerEmail)
