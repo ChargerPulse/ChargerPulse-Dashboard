@@ -33,8 +33,10 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
+    const admin = getAdminClient()
+
     // Check subscription status
-    const { data: subscription } = await getAdminClient()
+    const { data: subscription } = await admin
       .from('user_subscriptions')
       .select('status, trial_ends_at, plan')
       .eq('user_id', user.id)
@@ -45,19 +47,17 @@ export async function POST(request: Request) {
     const isTrial = subscription?.status === 'trial' &&
       subscription?.trial_ends_at &&
       new Date(subscription.trial_ends_at) > now
-    const hasAccess = isActive || isTrial
 
-    // Check if this is their first charger (free trial)
-    const { count } = await getAdminClient()
+    // Count existing chargers for this user
+    const { count } = await admin
       .from('chargers')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
 
-    if ((count || 0) >= 1 && !hasAccess) {
+    const chargerCount = count || 0
 
-    // Allow first charger for free (trial)
-    // Block if no subscription and already has chargers
-    if (!hasAccess && (count || 0) >= 1) {
+    // Allow first charger free, block second without paid plan
+    if (chargerCount >= 1 && !isActive && !isTrial) {
       return Response.json({
         error: 'UPGRADE_REQUIRED',
         message: 'Upgrade to a paid plan to add more chargers.',
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 
     // Create trial subscription on first charger registration
     if (!subscription) {
-      await getAdminClient().from('user_subscriptions').insert({
+      await admin.from('user_subscriptions').insert({
         user_id: user.id,
         status: 'trial',
         trial_ends_at: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
