@@ -50,8 +50,10 @@ export async function POST(request: Request) {
     // Check if this is their first charger (free trial)
     const { count } = await getAdminClient()
       .from('chargers')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
+
+    if ((count || 0) >= 1 && !hasAccess) {
 
     // Allow first charger for free (trial)
     // Block if no subscription and already has chargers
