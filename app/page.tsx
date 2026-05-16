@@ -44,8 +44,9 @@ export default function LandingPage() {
           <span style={{ fontSize: 18, fontWeight: 800, color: '#e2e8f0' }}>ChargerPulse</span>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <a href="/login" style={{ color: '#64748b', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Sign In</a>
+          <a href="/login" className="hide-mobile" style={{ color: '#64748b', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Sign In</a>
           <a href="/login" style={{ background: 'linear-gradient(135deg, #00d4ff, #a855f7)', color: 'white', padding: '9px 20px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>Get Started Free</a>
+        </div>
         </div>
       </nav>
 
@@ -75,7 +76,7 @@ export default function LandingPage() {
 
       {/* STATS */}
       <section style={{ padding: '60px 48px', maxWidth: 1000, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+        <div className="grid-4">
           {stats.map((s, i) => (
             <div key={i} className="card" style={{ padding: '28px 20px', textAlign: 'center' }}>
               <p style={{ fontSize: 40, fontWeight: 900, color: '#00d4ff', marginBottom: 8 }}>{s.value}</p>
@@ -91,7 +92,7 @@ export default function LandingPage() {
           <h2 style={{ fontSize: 36, fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>Everything you need to run a reliable EV fleet</h2>
           <p style={{ color: '#64748b', fontSize: 16 }}>Built specifically for fleet operators, depot managers and charging network providers</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+        <div className="grid-3">
           {features.map((f, i) => (
             <div key={i} className="card" style={{ padding: 28 }}>
               <div style={{ fontSize: 32, marginBottom: 16 }}>{f.icon}</div>
@@ -106,7 +107,7 @@ export default function LandingPage() {
       <section style={{ padding: '80px 48px', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
         <h2 style={{ fontSize: 36, fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>Up and running in 60 seconds</h2>
         <p style={{ color: '#64748b', fontSize: 16, marginBottom: 60 }}>No hardware required. No complex setup. Just point your charger at our server.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+        <div className="grid-3">
           {[
             { step: '1', title: 'Create your account', desc: 'Sign up free. No credit card required to get started.' },
             { step: '2', title: 'Register your charger', desc: 'Add your charger ID and point it to our OCPP endpoint.' },
@@ -127,7 +128,7 @@ export default function LandingPage() {
           <h2 style={{ fontSize: 36, fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>Simple, transparent pricing</h2>
           <p style={{ color: '#64748b', fontSize: 16 }}>Start free. Upgrade when you need more chargers.</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+        <div className="grid-3">
           {plans.map(plan => (
             <div key={plan.name} className="card" style={{ padding: 32, position: 'relative', overflow: 'hidden', border: plan.popular ? '1px solid rgba(168,85,247,0.4)' : '1px solid rgba(255,255,255,0.08)', boxShadow: plan.popular ? '0 0 40px rgba(168,85,247,0.1)' : 'none' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent,' + plan.color + ',transparent)' }} />
