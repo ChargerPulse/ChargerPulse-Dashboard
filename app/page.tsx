@@ -173,8 +173,10 @@ export default function LandingPage() {
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           <a href="/pricing" style={{ color: '#64748b', textDecoration: 'none', fontSize: 13 }}>Pricing</a>
+          <a href="/contact" style={{ color: '#64748b', textDecoration: 'none', fontSize: 13 }}>Contact</a>
+          <a href="/terms" style={{ color: '#64748b', textDecoration: 'none', fontSize: 13 }}>Terms</a>
+          <a href="/privacy" style={{ color: '#64748b', textDecoration: 'none', fontSize: 13 }}>Privacy</a>
           <a href="/login" style={{ color: '#64748b', textDecoration: 'none', fontSize: 13 }}>Login</a>
-          <a href="/dashboard" style={{ color: '#64748b', textDecoration: 'none', fontSize: 13 }}>Dashboard</a>
         </div>
       </footer>
 
