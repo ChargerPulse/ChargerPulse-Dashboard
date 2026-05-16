@@ -77,7 +77,6 @@ export default function PricingPage() {
           <a href="/terms" style={{ color: '#475569', fontSize: 12, textDecoration: 'none', marginRight: 16 }}>Terms of Service</a>
           <a href="/privacy" style={{ color: '#475569', fontSize: 12, textDecoration: 'none' }}>Privacy Policy</a>
         </div>
-        </p>
         <div style={{ textAlign: 'center' }}>
           <a href="/" style={{ color: '#00d4ff', fontSize: 13, textDecoration: 'none' }}>Back to Dashboard</a>
         </div>
