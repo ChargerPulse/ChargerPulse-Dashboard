@@ -32,7 +32,12 @@ export default function RegisterPage() {
       } else {
         setStatus('error')
         setMessage(data.error || 'Something went wrong.')
-      } }
+      }
+    } catch {
+      setStatus('error')
+      setMessage('Failed to connect to server.')
+    }
+  }
   }
 
   return (
