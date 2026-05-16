@@ -1,68 +1,54 @@
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
+import { createClient } from '@supabase/supabase-js'
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
 const WEBHOOK_SECRET = process.env.LEMONSQUEEZY_WEBHOOK_SECRET
 const FROM_EMAIL = process.env.ALERT_FROM_EMAIL || 'senzoradebe999@gmail.com'
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 async function sendWelcomeEmail(customerEmail: string, customerName: string, planName: string) {
   const body = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #020817; color: #e2e8f0;">
-      
       <div style="background: linear-gradient(135deg, #00d4ff, #a855f7); padding: 40px; text-align: center; border-radius: 12px 12px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 900;">⚡ Welcome to ChargerPulse!</h1>
         <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 16px;">Your EV chargers are now protected 24/7</p>
       </div>
-
       <div style="background: #0d1421; padding: 40px; border: 1px solid rgba(255,255,255,0.08);">
         <p style="font-size: 16px; color: #e2e8f0;">Hi ${customerName || 'there'}! 👋</p>
         <p style="color: #94a3b8; line-height: 1.7;">
-          Thank you for subscribing to <strong style="color: #00d4ff;">ChargerPulse ${planName}</strong>! 
+          Thank you for subscribing to <strong style="color: #00d4ff;">ChargerPulse ${planName}</strong>!
           Your EV charging infrastructure is now being monitored 24/7.
         </p>
-
         <div style="background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 24px; margin: 24px 0;">
           <h2 style="color: #00d4ff; margin: 0 0 16px; font-size: 16px;">🚀 Get started in 3 steps:</h2>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <p style="color: #94a3b8; margin: 0;"><strong style="color: #e2e8f0;">1.</strong> Log into your dashboard at <a href="https://chargerpulse-dashboard.onrender.com/dashboard" style="color: #00d4ff;">chargerpulse-dashboard.onrender.com/dashboard</a></p>
-            <p style="color: #94a3b8; margin: 0;"><strong style="color: #e2e8f0;">2.</strong> Click <strong style="color: #00ff88;">+ ADD</strong> to register your first charger</p>
-            <p style="color: #94a3b8; margin: 0;"><strong style="color: #e2e8f0;">3.</strong> Point your charger to: <strong style="color: #00d4ff; font-family: monospace;">wss://chargerpulse-1.onrender.com/YOUR_CHARGER_ID</strong></p>
-          </div>
+          <p style="color: #94a3b8; margin: 0 0 8px;"><strong style="color: #e2e8f0;">1.</strong> Log into your dashboard: <a href="https://chargerpulse-dashboard.onrender.com/dashboard" style="color: #00d4ff;">chargerpulse-dashboard.onrender.com/dashboard</a></p>
+          <p style="color: #94a3b8; margin: 0 0 8px;"><strong style="color: #e2e8f0;">2.</strong> Click <strong style="color: #00ff88;">+ ADD</strong> to register your charger</p>
+          <p style="color: #94a3b8; margin: 0;"><strong style="color: #e2e8f0;">3.</strong> Point your charger to: <strong style="color: #00d4ff; font-family: monospace;">wss://chargerpulse-1.onrender.com/YOUR_ID</strong></p>
         </div>
-
-        <div style="background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.2); border-radius: 12px; padding: 20px; margin: 24px 0;">
-          <h3 style="color: #00ff88; margin: 0 0 12px; font-size: 14px;">✅ What's included in your plan:</h3>
-          <ul style="color: #94a3b8; margin: 0; padding-left: 20px; line-height: 1.8;">
-            <li>Real-time charger monitoring 24/7</li>
-            <li>Instant email alerts when chargers go offline</li>
-            <li>Uptime analytics (24h, 7d, 30d)</li>
-            <li>Full event history and CSV export</li>
-            <li>Alert history with auto-resolution</li>
-          </ul>
-        </div>
-
         <div style="text-align: center; margin: 32px 0;">
-          <a href="https://chargerpulse-dashboard.onrender.com/dashboard" 
+          <a href="https://chargerpulse-dashboard.onrender.com/dashboard"
              style="background: linear-gradient(135deg, #00d4ff, #a855f7); color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 15px; display: inline-block;">
             Go to My Dashboard →
           </a>
         </div>
-
         <p style="color: #64748b; font-size: 13px; line-height: 1.7;">
-          Need help getting started? Just reply to this email — I personally read every message.<br/>
+          Need help? Just reply to this email — I personally read every message.<br/>
           <strong style="color: #e2e8f0;">Senzo Ngoyi</strong><br/>
           Founder, ChargerPulse
         </p>
       </div>
-
-      <div style="background: #080c14; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid rgba(255,255,255,0.04);">
+      <div style="background: #080c14; padding: 20px; text-align: center; border-radius: 0 0 12px 12px;">
         <p style="color: #334155; font-size: 12px; margin: 0;">
-          ChargerPulse — EV Intelligence Platform | 
-          <a href="https://chargerpulse-dashboard.onrender.com/terms" style="color: #334155;">Terms</a> | 
+          ChargerPulse |
+          <a href="https://chargerpulse-dashboard.onrender.com/terms" style="color: #334155;">Terms</a> |
           <a href="https://chargerpulse-dashboard.onrender.com/privacy" style="color: #334155;">Privacy</a>
         </p>
       </div>
-
     </div>
   `
 
@@ -87,6 +73,28 @@ async function sendWelcomeEmail(customerEmail: string, customerName: string, pla
   }
 }
 
+async function recordSubscription(customerEmail: string, planName: string, customerId: string) {
+  try {
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+    const user = users?.users?.find(u => u.email === customerEmail)
+
+    if (user) {
+      await supabaseAdmin.from('user_subscriptions').upsert({
+        user_id: user.id,
+        status: 'active',
+        plan: planName,
+        subscribed_at: new Date().toISOString(),
+        lemon_squeezy_customer_id: customerId,
+      })
+      console.log(`✅ Subscription recorded for ${customerEmail}`)
+    } else {
+      console.log(`⚠️ No user found for ${customerEmail} — will activate on first login`)
+    }
+  } catch (err) {
+    console.error('❌ Failed to record subscription:', err)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text()
@@ -97,7 +105,6 @@ export async function POST(request: NextRequest) {
       hmac.update(rawBody)
       const digest = hmac.digest('hex')
       if (digest !== signature) {
-        console.error('Invalid webhook signature')
         return new Response('Unauthorized', { status: 401 })
       }
     }
@@ -114,9 +121,11 @@ export async function POST(request: NextRequest) {
         payload.data?.attributes?.customer_name || ''
       const planName = payload.data?.attributes?.product_name ||
         payload.data?.attributes?.variant_name || 'Pro'
+      const customerId = payload.data?.attributes?.customer_id?.toString() || ''
 
       if (customerEmail) {
         await sendWelcomeEmail(customerEmail, customerName, planName)
+        await recordSubscription(customerEmail, planName, customerId)
       }
     }
 

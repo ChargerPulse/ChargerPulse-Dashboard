@@ -1,6 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: Request) {
   try {
@@ -24,6 +29,35 @@ export async function POST(request: Request) {
 
     if (!user) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    // Check subscription status
+    const { data: subscription } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('status, trial_ends_at, plan')
+      .eq('user_id', user.id)
+      .single()
+
+    const now = new Date()
+    const isActive = subscription?.status === 'active'
+    const isTrial = subscription?.status === 'trial' &&
+      subscription?.trial_ends_at &&
+      new Date(subscription.trial_ends_at) > now
+    const hasAccess = isActive || isTrial
+
+    // Check if this is their first charger (free trial)
+    const { count } = await supabaseAdmin
+      .from('chargers')
+      .select('id', { count: 'exact' })
+      .eq('user_id', user.id)
+
+    // Allow first charger for free (trial)
+    // Block if no subscription and already has chargers
+    if (!hasAccess && (count || 0) >= 1) {
+      return Response.json({
+        error: 'UPGRADE_REQUIRED',
+        message: 'Upgrade to a paid plan to add more chargers.',
+      }, { status: 403 })
     }
 
     const { chargerId, nickname, location } = await request.json()
@@ -54,8 +88,18 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: 500 })
     }
 
+    // Create trial subscription on first charger registration
+    if (!subscription) {
+      await supabaseAdmin.from('user_subscriptions').insert({
+        user_id: user.id,
+        status: 'trial',
+        trial_ends_at: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+    }
+
     return Response.json({ success: true, chargerId, nickname })
   } catch (err) {
+    console.error('Register error:', err)
     return Response.json({ error: 'Server error' }, { status: 500 })
   }
 }

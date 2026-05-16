@@ -22,9 +22,17 @@ export default function RegisterPage() {
     try {
       const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const data = await res.json()
-      if (res.ok) { setStatus('success'); setMessage(`"${form.nickname}" registered!`); setForm({ chargerId: '', nickname: '', location: '' }) }
-      else { setStatus('error'); setMessage(data.error || 'Something went wrong.') }
-    } catch { setStatus('error'); setMessage('Failed to connect to server.') }
+      if (res.ok) {
+        setStatus('success')
+        setMessage(`Charger "${formData.nickname}" registered successfully!`)
+        setFormData({ chargerId: '', nickname: '', location: '' })
+      } else if (data.error === 'UPGRADE_REQUIRED') {
+        setStatus('error')
+        setMessage('You need a paid plan to add more chargers. Click Upgrade to subscribe!')
+      } else {
+        setStatus('error')
+        setMessage(data.error || 'Something went wrong.')
+      } }
   }
 
   return (
