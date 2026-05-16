@@ -2,10 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: Request) {
   try {
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Check subscription status
-    const { data: subscription } = await supabaseAdmin
+    const { data: subscription } = await getAdminClient()
       .from('user_subscriptions')
       .select('status, trial_ends_at, plan')
       .eq('user_id', user.id)
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
     const hasAccess = isActive || isTrial
 
     // Check if this is their first charger (free trial)
-    const { count } = await supabaseAdmin
+    const { count } = await getAdminClient()
       .from('chargers')
       .select('id', { count: 'exact' })
       .eq('user_id', user.id)
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
 
     // Create trial subscription on first charger registration
     if (!subscription) {
-      await supabaseAdmin.from('user_subscriptions').insert({
+      await getAdminClient().from('user_subscriptions').insert({
         user_id: user.id,
         status: 'trial',
         trial_ends_at: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),

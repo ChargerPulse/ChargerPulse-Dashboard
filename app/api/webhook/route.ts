@@ -6,10 +6,13 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
 const WEBHOOK_SECRET = process.env.LEMONSQUEEZY_WEBHOOK_SECRET
 const FROM_EMAIL = process.env.ALERT_FROM_EMAIL || 'senzoradebe999@gmail.com'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
 
 async function sendWelcomeEmail(customerEmail: string, customerName: string, planName: string) {
   const body = `
@@ -75,11 +78,11 @@ async function sendWelcomeEmail(customerEmail: string, customerName: string, pla
 
 async function recordSubscription(customerEmail: string, planName: string, customerId: string) {
   try {
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: users } = await getAdminClient().auth.admin.listUsers()
     const user = users?.users?.find(u => u.email === customerEmail)
 
     if (user) {
-      await supabaseAdmin.from('user_subscriptions').upsert({
+      await getAdminClient().from('user_subscriptions').upsert({
         user_id: user.id,
         status: 'active',
         plan: planName,
