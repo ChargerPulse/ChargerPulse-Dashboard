@@ -9,6 +9,18 @@ function getAdminClient() {
   )
 }
 
+function getPlanLimit(plan: string | null, status: string | null): number {
+  if (status === 'active') {
+    const p = (plan || '').toLowerCase()
+    if (p.includes('enterprise') || p.includes('unlimited')) return 999
+    if (p.includes('plus')) return 5
+    if (p.includes('pro')) return 1
+    return 1
+  }
+  if (status === 'trial') return 1
+  return 0
+}
+
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies()
@@ -35,7 +47,6 @@ export async function POST(request: Request) {
 
     const admin = getAdminClient()
 
-    // Check subscription status
     const { data: subscription } = await admin
       .from('user_subscriptions')
       .select('status, trial_ends_at, plan')
@@ -47,20 +58,42 @@ export async function POST(request: Request) {
     const isTrial = subscription?.status === 'trial' &&
       subscription?.trial_ends_at &&
       new Date(subscription.trial_ends_at) > now
+    const isExpired = subscription?.status === 'trial' &&
+      subscription?.trial_ends_at &&
+      new Date(subscription.trial_ends_at) <= now
 
-    // Count existing chargers for this user
     const { count } = await admin
       .from('chargers')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
 
     const chargerCount = count || 0
+    const planLimit = getPlanLimit(
+      subscription?.plan || null,
+      isActive ? 'active' : isTrial ? 'trial' : 'none'
+    )
 
-    // Allow first charger free, block second without paid plan
-    if (chargerCount >= 1 && !isActive && !isTrial) {
+    if (isExpired) {
       return Response.json({
         error: 'UPGRADE_REQUIRED',
-        message: 'Upgrade to a paid plan to add more chargers.',
+        message: 'Your free trial has expired. Upgrade to continue monitoring your chargers.',
+      }, { status: 403 })
+    }
+
+    if (!isActive && !isTrial && chargerCount >= 1) {
+      return Response.json({
+        error: 'UPGRADE_REQUIRED',
+        message: 'Upgrade to a paid plan to add chargers.',
+      }, { status: 403 })
+    }
+
+    if (chargerCount >= planLimit) {
+      const planName = subscription?.plan || 'your current plan'
+      return Response.json({
+        error: 'UPGRADE_REQUIRED',
+        message: chargerCount >= 1
+          ? `You have reached the limit of ${planLimit} charger${planLimit > 1 ? 's' : ''} on ${planName}. Upgrade to add more!`
+          : 'Upgrade to a paid plan to add chargers.',
       }, { status: 403 })
     }
 
@@ -92,7 +125,6 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: 500 })
     }
 
-    // Create trial subscription on first charger registration
     if (!subscription) {
       await admin.from('user_subscriptions').insert({
         user_id: user.id,
