@@ -25,7 +25,9 @@ export default function PricingPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>⚡ ChargerPulse Pricing</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>
+            ChargerPulse Pricing
+          </h1>
           <p style={{ color: '#64748b', fontSize: 16 }}>Simple, transparent pricing for EV charger monitoring</p>
         </div>
 
@@ -51,7 +53,7 @@ export default function PricingPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
                 {plan.features.map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ color: plan.color }}>✓</span>
+                    <span style={{ color: plan.color, fontWeight: 700 }}>+</span>
                     <span style={{ color: '#94a3b8', fontSize: 13 }}>{f}</span>
                   </div>
                 ))}
@@ -63,15 +65,18 @@ export default function PricingPage() {
                 background: plan.popular ? `linear-gradient(135deg, ${plan.color}, #00d4ff)` : `${plan.color}18`,
                 color: plan.popular ? 'white' : plan.color,
                 border: `1px solid ${plan.color}40`,
-              }}>Get Started →</a>
+              }}>Get Started</a>
             </div>
           ))}
         </div>
 
-        <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginBottom: 16 }}>All plans include 7-day free trial. Cancel anytime.</p>
+        <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginBottom: 16 }}>
+          All plans include 7-day free trial. Cancel anytime.
+        </p>
         <div style={{ textAlign: 'center' }}>
-          <a href="/" style={{ color: '#00d4ff', fontSize: 13, textDecoration: 'none' }}>← Back to Dashboard</a>
+          <a href="/" style={{ color: '#00d4ff', fontSize: 13, textDecoration: 'none' }}>Back to Dashboard</a>
         </div>
+
       </div>
     </div>
   )
