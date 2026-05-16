@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { createClient } from '../../lib/supabase'
 
 interface ChargerData {
   id: string
@@ -28,8 +29,14 @@ export default function Dashboard() {
   const [chargers, setChargers] = useState<ChargerData[]>([])
   const [loading, setLoading] = useState(true)
   const [time, setTime] = useState(new Date())
+  const [userEmail, setUserEmail] = useState('')
 
   useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserEmail(data.user.email || '')
+    })
+
     const fetchChargers = async () => {
       try {
         const res = await fetch('/api/chargers')
@@ -45,6 +52,12 @@ export default function Dashboard() {
     const timeInterval = setInterval(() => setTime(new Date()), 1000)
     return () => { clearInterval(dataInterval); clearInterval(timeInterval) }
   }, [])
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
 
   const avg = (key: keyof ChargerData) =>
     chargers.length > 0
@@ -83,9 +96,9 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {[
               { href: '/register', label: '+ ADD', color: '#00ff88', bg: 'rgba(0,255,136,0.1)', border: 'rgba(0,255,136,0.3)' },
-              { href: '/events', label: '◈ EVENTS', color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)' },
-              { href: '/alerts', label: '⚠ ALERTS', color: '#ff4444', bg: 'rgba(255,68,68,0.1)', border: 'rgba(255,68,68,0.3)' },
-              { href: '/pricing', label: '↑ UPGRADE', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
+              { href: '/events', label: 'EVENTS', color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)' },
+              { href: '/alerts', label: 'ALERTS', color: '#ff4444', bg: 'rgba(255,68,68,0.1)', border: 'rgba(255,68,68,0.3)' },
+              { href: '/pricing', label: 'UPGRADE', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
             ].map(btn => (
               <a key={btn.href} href={btn.href} style={{
                 padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700,
@@ -93,6 +106,11 @@ export default function Dashboard() {
                 background: btn.bg, border: `1px solid ${btn.border}`,
               }}>{btn.label}</a>
             ))}
+            <button onClick={handleLogout} style={{
+              padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+              letterSpacing: 1.5, color: '#ff4444', background: 'rgba(255,68,68,0.1)',
+              border: '1px solid rgba(255,68,68,0.3)', cursor: 'pointer',
+            }}>LOGOUT</button>
           </div>
 
           <div style={{ textAlign: 'right' }}>
@@ -102,6 +120,9 @@ export default function Dashboard() {
             <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>
               {time.toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
+            {userEmail && (
+              <p style={{ fontSize: 9, color: '#334155', marginTop: 2, letterSpacing: 1 }}>{userEmail}</p>
+            )}
           </div>
         </div>
 
@@ -145,7 +166,7 @@ export default function Dashboard() {
                     padding: '5px 12px', borderRadius: 6, fontSize: 10, fontWeight: 700,
                     letterSpacing: 1, color: '#64748b', background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none',
-                  }}>⬇ {d}D</a>
+                  }}>↓ {d}D</a>
                 ))}
               </div>
             </div>
