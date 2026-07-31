@@ -4,18 +4,18 @@ const plans = [
   {
     name: 'Pro', price: '$5', period: '/mo', desc: 'Monitor 1 charger', color: '#00d4ff',
     features: ['Monitor 1 charger', 'Real-time alerts', 'Basic analytics', 'Email support'],
-    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/44db6a87-af91-43ff-96db-613d1db2f061',
+    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/a26c3427-aab1-44fa-86d3-2e60ce05b282',
   },
   {
     name: 'Plus', price: '$15', period: '/mo', desc: 'Monitor 5 chargers', color: '#a855f7',
     features: ['Monitor up to 5 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'],
-    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/b0df42fc-f1a6-4fc8-b7d3-ed43878790ec',
+    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/e3a0375c-4d00-493f-b207-492866df949d',
     popular: true,
   },
   {
     name: 'Enterprise', price: '$50', period: '/mo', desc: 'Unlimited chargers', color: '#00ff88',
     features: ['Unlimited chargers', 'Real-time alerts', 'Custom analytics', 'Dedicated support'],
-    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/1a1cc852-4a6c-4b99-9d14-caaeba115d17',
+    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/f47e4a27-7f36-4074-b627-96a896567849',
   },
 ]
 
