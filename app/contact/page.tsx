@@ -14,8 +14,8 @@ export default function ContactPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
           {[
-            { icon: '📧', title: 'Email Support', desc: 'For general questions and support', contact: 'support@chargerpulse.io', link: 'mailto:senzoradebe999@gmail.com' },
-            { icon: '⚡', title: 'Technical Support', desc: 'For OCPP connection and setup help', contact: 'tech@chargerpulse.io', link: 'mailto:senzoradebe999@gmail.com' },
+            { icon: '📧', title: 'Email Support', desc: 'For general questions and support', contact: 'senzoradebe999@gmail.com', link: 'mailto:senzoradebe999@gmail.com' },
+            { icon: '⚡', title: 'Technical Support', desc: 'For OCPP connection and setup help', contact: 'senzoradebe999@gmail.com', link: 'mailto:senzoradebe999@gmail.com' },
           ].map((item, i) => (
             <div key={i} className="card" style={{ padding: 28, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 16 }}>{item.icon}</div>
@@ -81,4 +81,4 @@ export default function ContactPage() {
       </div>
     </div>
   )
-}
+                   }
