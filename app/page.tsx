@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '../lib/supabase'
@@ -29,9 +29,9 @@ export default function LandingPage() {
   ]
 
   const plans = [
-    { name: 'Pro', price: '$5', desc: 'Monitor 1 charger', color: '#00d4ff', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/44db6a87-af91-43ff-96db-613d1db2f061', features: ['1 charger', 'Real-time alerts', 'Basic analytics', 'Email support'] },
-    { name: 'Plus', price: '$15', desc: 'Monitor 5 chargers', color: '#a855f7', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/b0df42fc-f1a6-4fc8-b7d3-ed43878790ec', features: ['5 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'], popular: true },
-    { name: 'Enterprise', price: '$50', desc: 'Unlimited chargers', color: '#00ff88', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/1a1cc852-4a6c-4b99-9d14-caaeba115d17', features: ['Unlimited chargers', 'Real-time alerts', 'Custom analytics', 'Dedicated support'] },
+    { name: 'Starter', price: '$15', desc: 'Monitor 1 charger', color: '#00d4ff', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/a26c3427-aab1-44fa-86d3-2e60ce05b282', features: ['1 charger', 'Real-time alerts', 'Basic analytics', 'Email support'], cta: 'Get Started →' },
+    { name: 'Growth', price: '$89', desc: 'Monitor up to 10 chargers', color: '#a855f7', link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/e3a0375c-4d00-493f-b207-492866df949d', features: ['Up to 10 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'], popular: true, cta: 'Get Started →' },
+    { name: 'Enterprise', price: 'Custom', desc: 'Unlimited chargers, built for your scale', color: '#00ff88', link: '/contact', features: ['Unlimited chargers', 'Real-time alerts', 'Custom analytics', 'Dedicated support', 'Custom integrations'], cta: 'Contact Us' },
   ]
 
   return (
@@ -135,7 +135,7 @@ export default function LandingPage() {
               <h3 style={{ fontSize: 20, fontWeight: 800, color: '#e2e8f0', marginBottom: 8 }}>{plan.name}</h3>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 6 }}>
                 <span style={{ fontSize: 44, fontWeight: 900, color: plan.color }}>{plan.price}</span>
-                <span style={{ color: '#64748b', fontSize: 14 }}>/mo</span>
+                {plan.price !== 'Custom' && <span style={{ color: '#64748b', fontSize: 14 }}>/mo</span>}
               </div>
               <p style={{ color: '#64748b', fontSize: 13, marginBottom: 24 }}>{plan.desc}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
@@ -147,7 +147,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <a href={plan.link} style={{ display: 'block', textAlign: 'center', padding: 12, borderRadius: 10, fontWeight: 800, fontSize: 14, textDecoration: 'none', background: plan.popular ? 'linear-gradient(135deg, #a855f7, #00d4ff)' : 'rgba(255,255,255,0.05)', color: plan.popular ? 'white' : plan.color, border: '1px solid ' + plan.color + '40' }}>
-                Get Started →
+                {plan.cta}
               </a>
             </div>
           ))}
