@@ -2,20 +2,23 @@
 
 const plans = [
   {
-    name: 'Pro', price: '$5', period: '/mo', desc: 'Monitor 1 charger', color: '#00d4ff',
+    name: 'Starter', price: '$15', period: '/mo', desc: 'Monitor 1 charger', color: '#00d4ff',
     features: ['Monitor 1 charger', 'Real-time alerts', 'Basic analytics', 'Email support'],
     link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/a26c3427-aab1-44fa-86d3-2e60ce05b282',
+    cta: 'Get Started',
   },
   {
-    name: 'Plus', price: '$15', period: '/mo', desc: 'Monitor 5 chargers', color: '#a855f7',
-    features: ['Monitor up to 5 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'],
+    name: 'Growth', price: '$89', period: '/mo', desc: 'Monitor up to 10 chargers', color: '#a855f7',
+    features: ['Monitor up to 10 chargers', 'Real-time alerts', 'Advanced analytics', 'Priority support'],
     link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/e3a0375c-4d00-493f-b207-492866df949d',
     popular: true,
+    cta: 'Get Started',
   },
   {
-    name: 'Enterprise', price: '$50', period: '/mo', desc: 'Unlimited chargers', color: '#00ff88',
-    features: ['Unlimited chargers', 'Real-time alerts', 'Custom analytics', 'Dedicated support'],
-    link: 'https://chargerpulse.lemonsqueezy.com/checkout/buy/f47e4a27-7f36-4074-b627-96a896567849',
+    name: 'Enterprise', price: 'Custom', period: '', desc: 'Unlimited chargers, built for your scale', color: '#00ff88',
+    features: ['Unlimited chargers', 'Real-time alerts', 'Custom analytics', 'Dedicated support', 'Custom integrations'],
+    link: '/contact',
+    cta: 'Contact Us',
   },
 ]
 
@@ -65,7 +68,7 @@ export default function PricingPage() {
                 background: plan.popular ? `linear-gradient(135deg, ${plan.color}, #00d4ff)` : `${plan.color}18`,
                 color: plan.popular ? 'white' : plan.color,
                 border: `1px solid ${plan.color}40`,
-              }}>Get Started</a>
+              }}>{plan.cta}</a>
             </div>
           ))}
         </div>
