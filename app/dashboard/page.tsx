@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { createClient } from '../../lib/supabase'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 interface ChargerData {
   id: string
@@ -103,6 +105,52 @@ export default function Dashboard() {
   const chargingNow = countByStatus('charging')
   const faultedNow = countByStatus('faulted')
 
+  // Builds a PDF straight from what's already on screen — every figure in
+  // the report is the same number the operator is looking at, nothing is
+  // pulled from anywhere else or recalculated differently.
+  const handleDownloadReport = () => {
+    const doc = new jsPDF()
+    const generatedAt = new Date().toLocaleString()
+
+    doc.setFontSize(18)
+    doc.text('ChargerPulse — Fleet Report', 14, 20)
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    doc.text(`Generated: ${generatedAt}`, 14, 27)
+
+    doc.setFontSize(12)
+    doc.setTextColor(0)
+    doc.text('Fleet Summary', 14, 38)
+    autoTable(doc, {
+      startY: 42,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Active Chargers', chargers.length.toString()],
+        ['Fleet Uptime (24h)', `${avg('uptime24h')}%`],
+        ['Fleet Uptime (7d)', `${avg('uptime7d')}%`],
+        ['Fleet Uptime (30d)', `${avg('uptime30d')}%`],
+        ['Sessions Today', sessionsToday !== null ? sessionsToday.toString() : 'Not yet tracked'],
+        ['Energy Delivered Today', energyToday !== null ? `${energyToday.toFixed(1)} kWh` : 'Not yet tracked'],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [4, 47, 51] },
+    })
+
+    const afterSummaryY = (doc as any).lastAutoTable.finalY + 12
+    doc.setFontSize(12)
+    doc.text('Charger Detail', 14, afterSummaryY)
+    autoTable(doc, {
+      startY: afterSummaryY + 4,
+      head: [['Charger ID', 'Name', '24h', '7d', '30d', 'Last Seen']],
+      body: chargers.map(c => [c.id, c.nickname, `${c.uptime24h}%`, `${c.uptime7d}%`, `${c.uptime30d}%`, c.lastUpdate]),
+      theme: 'grid',
+      headStyles: { fillColor: [4, 47, 51] },
+      styles: { fontSize: 9 },
+    })
+
+    doc.save(`chargerpulse-fleet-report-${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
   const businessKpis = [
     {
       label: 'SESSIONS TODAY',
@@ -179,14 +227,14 @@ export default function Dashboard() {
               {time.toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
             {userEmail && (
-              <p style={{ fontSize: 9, color: '#334155', marginTop: 2, letterSpacing: 1 }}>{userEmail}</p>
+              <p style={{ fontSize: 9, color: '#64748b', marginTop: 2, letterSpacing: 1 }}>{userEmail}</p>
             )}
           </div>
         </div>
 
         {/* BUSINESS OVERVIEW — "how is my charging business doing right now" */}
         <div style={{ marginBottom: 12 }}>
-          <p style={{ fontSize: 10, color: '#334155', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Today</p>
+          <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Today</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {businessKpis.map((kpi, i) => (
               <div key={i} style={{
@@ -200,7 +248,7 @@ export default function Dashboard() {
                   <div>
                     <p style={{ fontSize: 9, color: '#64748b', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>{kpi.label}</p>
                     <p style={{ fontSize: 30, fontWeight: 800, color: kpi.color, lineHeight: 1, textShadow: kpi.value !== '—' ? `0 0 20px ${kpi.color}80` : 'none' }}>{kpi.value}</p>
-                    <p style={{ fontSize: 10, color: '#334155', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
+                    <p style={{ fontSize: 10, color: '#64748b', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
                   </div>
                   <span style={{ fontSize: 22, color: kpi.color, opacity: 0.4 }}>{kpi.icon}</span>
                 </div>
@@ -228,7 +276,7 @@ export default function Dashboard() {
                 <div>
                   <p style={{ fontSize: 9, color: '#64748b', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{kpi.label}</p>
                   <p style={{ fontSize: 36, fontWeight: 800, color: kpi.color, lineHeight: 1, textShadow: `0 0 20px ${kpi.color}80` }}>{kpi.value}</p>
-                  <p style={{ fontSize: 10, color: '#334155', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
+                  <p style={{ fontSize: 10, color: '#64748b', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
                 </div>
                 <span style={{ fontSize: 24, color: kpi.color, opacity: 0.4 }}>{kpi.icon}</span>
               </div>
@@ -244,10 +292,15 @@ export default function Dashboard() {
             <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(0,212,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#e2e8f0' }}>⚡ Connected Chargers</span>
               <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleDownloadReport} style={{
+                  padding: '5px 12px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                  letterSpacing: 1, color: '#00d4ff', background: 'rgba(0,212,255,0.08)',
+                  border: '1px solid rgba(0,212,255,0.25)', cursor: 'pointer',
+                }}>📄 PDF REPORT</button>
                 {[7, 30].map(d => (
                   <a key={d} href={`/api/export?days=${d}`} style={{
                     padding: '5px 12px', borderRadius: 6, fontSize: 10, fontWeight: 700,
-                    letterSpacing: 1, color: '#64748b', background: 'rgba(255,255,255,0.04)',
+                    letterSpacing: 1, color: '#94a3b8', background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none',
                   }}>↓ {d}D</a>
                 ))}
@@ -255,10 +308,10 @@ export default function Dashboard() {
             </div>
 
             {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: '#334155', letterSpacing: 2, fontSize: 11 }}>LOADING...</div>
+              <div style={{ padding: 40, textAlign: 'center', color: '#64748b', letterSpacing: 2, fontSize: 11 }}>LOADING...</div>
             ) : chargers.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center' }}>
-                <p style={{ color: '#334155', marginBottom: 12 }}>No chargers connected</p>
+                <p style={{ color: '#64748b', marginBottom: 12 }}>No chargers connected</p>
                 <a href="/register" style={{ color: '#00d4ff', fontSize: 12 }}>+ Register your first charger</a>
               </div>
             ) : (
@@ -266,7 +319,7 @@ export default function Dashboard() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     {['CHARGER ID', 'NAME', '24H', '7D', '30D', 'LAST SEEN'].map(h => (
-                      <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 9, color: '#334155', letterSpacing: 2, fontWeight: 700 }}>{h}</th>
+                      <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, color: '#64748b', letterSpacing: 2, fontWeight: 700 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -291,7 +344,7 @@ export default function Dashboard() {
                           }}>{val}%</span>
                         </td>
                       ))}
-                      <td style={{ padding: '14px 20px', color: '#334155', fontSize: 11, fontFamily: 'monospace' }}>{charger.lastUpdate}</td>
+                      <td style={{ padding: '14px 20px', color: '#64748b', fontSize: 12, fontFamily: 'monospace' }}>{charger.lastUpdate}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -314,8 +367,8 @@ export default function Dashboard() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="name" tick={{ fill: '#334155', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: '#334155', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Area type="monotone" dataKey="value" stroke="#00d4ff" strokeWidth={2} fill="url(#cyanGrad)" />
                 </AreaChart>
@@ -329,26 +382,4 @@ export default function Dashboard() {
                 { label: 'OCPP Server', status: 'ONLINE', color: '#00ff88' },
                 { label: 'Database', status: 'CONNECTED', color: '#00ff88' },
                 { label: 'Alert Engine', status: 'ACTIVE', color: '#00ff88' },
-                { label: 'Email Alerts', status: 'ENABLED', color: '#00d4ff' },
-              ].map(s => (
-                <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>{s.label}</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: s.color, letterSpacing: 1, padding: '3px 8px', background: `${s.color}18`, borderRadius: 4, border: `1px solid ${s.color}40` }}>{s.status}</span>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-          <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 2 }}>CHARGERPULSE v1.0 — EV INTELLIGENCE PLATFORM</p>
-          <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 1 }}>DATA REFRESHES EVERY 30S</p>
-        </div>
-
-      </div>
-    </div>
-  )
-        }
-  
+                { label: 'Email Al
