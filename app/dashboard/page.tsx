@@ -382,4 +382,25 @@ export default function Dashboard() {
                 { label: 'OCPP Server', status: 'ONLINE', color: '#00ff88' },
                 { label: 'Database', status: 'CONNECTED', color: '#00ff88' },
                 { label: 'Alert Engine', status: 'ACTIVE', color: '#00ff88' },
-                { label: 'Email Al
+                { label: 'Email Alerts', status: 'ENABLED', color: '#00d4ff' },
+              ].map(s => (
+                <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>{s.label}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: s.color, letterSpacing: 1, padding: '3px 8px', background: `${s.color}18`, borderRadius: 4, border: `1px solid ${s.color}40` }}>{s.status}</span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 2 }}>CHARGERPULSE v1.0 — EV INTELLIGENCE PLATFORM</p>
+          <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 1 }}>DATA REFRESHES EVERY 30S</p>
+        </div>
+
+      </div>
+    </div>
+  )
+}
