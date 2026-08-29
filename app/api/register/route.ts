@@ -107,22 +107,45 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Charger ID cannot contain spaces' }, { status: 400 })
     }
 
-    const { data: existing } = await supabase
-      .from('chargers')
-      .select('id')
-      .eq('id', chargerId)
-      .single()
+    const { data: claimResult, error: claimError } = await supabase
+      .rpc('claim_charger', { charger_id: chargerId })
 
-    if (existing) {
+    if (claimError) {
+      return Response.json({ error: claimError.message }, { status: 500 })
+    }
+
+    const status = claimResult?.status
+
+    if (status === 'already_claimed') {
+      return Response.json({
+        error: 'This charger ID is already registered to another account. If this is your charger, contact support.',
+      }, { status: 409 })
+    }
+
+    if (status === 'already_yours') {
       return Response.json({ error: 'A charger with this ID already exists' }, { status: 409 })
     }
 
-    const { error } = await supabase
-      .from('chargers')
-      .insert({ id: chargerId, nickname, location: location || null, user_id: user.id })
+    if (status === 'claimed') {
+      // Charger had already auto-registered via OCPP (unclaimed). Now that
+      // it's ours, fill in the nickname/location the user just typed in.
+      const { error: updateError } = await supabase
+        .from('chargers')
+        .update({ nickname, location: location || null })
+        .eq('id', chargerId)
 
-    if (error) {
-      return Response.json({ error: error.message }, { status: 500 })
+      if (updateError) {
+        return Response.json({ error: updateError.message }, { status: 500 })
+      }
+    } else {
+      // status === 'not_found' — brand new charger that hasn't connected yet.
+      const { error } = await supabase
+        .from('chargers')
+        .insert({ id: chargerId, nickname, location: location || null, user_id: user.id })
+
+      if (error) {
+        return Response.json({ error: error.message }, { status: 500 })
+      }
     }
 
     if (!subscription) {
