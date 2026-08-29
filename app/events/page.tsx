@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 interface Event {
   id: number
@@ -112,6 +114,39 @@ export default function EventsPage() {
   // Newest first for the timeline view.
   const sortedFiltered = [...filtered].sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
 
+  // Exports exactly what's on screen right now — same filter, same
+  // computed durations — so the PDF never disagrees with the page.
+  const handleDownloadReport = () => {
+    const doc = new jsPDF()
+    const scopeLabel = filter === 'all' ? 'All Chargers' : getNick(filter)
+
+    doc.setFontSize(18)
+    doc.text('ChargerPulse — Events Report', 14, 20)
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    doc.text(`Scope: ${scopeLabel}  |  Generated: ${new Date().toLocaleString()}`, 14, 27)
+
+    autoTable(doc, {
+      startY: 34,
+      head: [['Time', 'Charger', 'Connector', 'Status', 'Duration']],
+      body: sortedFiltered.map(ev => {
+        const d = durationById.get(ev.id)
+        return [
+          new Date(ev.ts).toLocaleString(),
+          getNick(ev.cp_id),
+          `#${ev.connector_id}`,
+          ev.status,
+          d ? `${d.ongoing ? 'Ongoing — ' : ''}${formatDuration(d.ms)}` : '—',
+        ]
+      }),
+      theme: 'grid',
+      headStyles: { fillColor: [4, 47, 51] },
+      styles: { fontSize: 9 },
+    })
+
+    doc.save(`chargerpulse-events-report-${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
   return (
     <div className="space-bg" style={{ padding: '32px', minHeight: '100vh' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -121,9 +156,14 @@ export default function EventsPage() {
             <h1 style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>📋 Events Timeline</h1>
             <p style={{ color: '#64748b', fontSize: 14 }}>Live log of all OCPP charger events</p>
           </div>
-          <a href="/" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
-            ← Dashboard
-          </a>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={handleDownloadReport} style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+              📄 PDF Report
+            </button>
+            <a href="/" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', padding: '10px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+              ← Dashboard
+            </a>
+          </div>
         </div>
 
         {/* Status counts */}
@@ -158,9 +198,9 @@ export default function EventsPage() {
           </div>
 
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>Loading events...</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Loading events...</div>
           ) : sortedFiltered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No events found.</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>No events found.</div>
           ) : (
             <div>
               {sortedFiltered.map((ev, idx) => {
@@ -184,7 +224,7 @@ export default function EventsPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
                         <div>
                           <span style={{ fontFamily: 'monospace', color: '#00d4ff', fontSize: 12 }}>{getNick(ev.cp_id)}</span>
-                          <span style={{ color: '#334155', fontSize: 11, marginLeft: 8 }}>Connector #{ev.connector_id}</span>
+                          <span style={{ color: '#64748b', fontSize: 11, marginLeft: 8 }}>Connector #{ev.connector_id}</span>
                         </div>
                         <span style={{ padding: '3px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, color: st.color, background: st.bg, border: `1px solid ${st.border}` }}>
                           {ev.status}
