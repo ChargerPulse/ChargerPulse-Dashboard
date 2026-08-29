@@ -11,6 +11,13 @@ interface ChargerData {
   uptime7d: number
   uptime30d: number
   lastUpdate: string
+  // Optional — populate these in /api/chargers once the backend tracks
+  // per-charger live status and daily session/energy totals. Until then,
+  // the Business Overview cards below show "Coming soon" instead of a
+  // fabricated zero, so the dashboard never shows fake data.
+  status?: 'available' | 'charging' | 'faulted' | 'offline'
+  sessionsToday?: number
+  energyTodayKwh?: number
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -61,7 +68,7 @@ export default function Dashboard() {
 
   const avg = (key: keyof ChargerData) =>
     chargers.length > 0
-      ? (chargers.reduce((a, c) => a + (c[key] as number), 0) / chargers.length).toFixed(1)
+      ? (chargers.reduce((a, c) => a + ((c[key] as number) || 0), 0) / chargers.length).toFixed(1)
       : '0'
 
   const chartData = [
@@ -75,6 +82,57 @@ export default function Dashboard() {
     if (val >= 80) return '#f59e0b'
     return '#ff4444'
   }
+
+  // --- Business Overview helpers ---------------------------------------
+  // Returns null (not 0) when no charger reports the field, so the UI can
+  // tell "genuinely zero" apart from "backend doesn't send this yet".
+  const sumOptional = (key: 'sessionsToday' | 'energyTodayKwh'): number | null => {
+    const withData = chargers.filter(c => typeof c[key] === 'number')
+    if (withData.length === 0) return null
+    return withData.reduce((a, c) => a + ((c[key] as number) || 0), 0)
+  }
+
+  const countByStatus = (status: ChargerData['status']): number | null => {
+    const withData = chargers.filter(c => c.status !== undefined)
+    if (withData.length === 0) return null
+    return chargers.filter(c => c.status === status).length
+  }
+
+  const sessionsToday = sumOptional('sessionsToday')
+  const energyToday = sumOptional('energyTodayKwh')
+  const chargingNow = countByStatus('charging')
+  const faultedNow = countByStatus('faulted')
+
+  const businessKpis = [
+    {
+      label: 'SESSIONS TODAY',
+      value: sessionsToday !== null ? sessionsToday.toString() : '—',
+      sub: sessionsToday !== null ? 'Charging sessions' : 'Coming soon',
+      color: '#00d4ff',
+      icon: '🚗',
+    },
+    {
+      label: 'ENERGY DELIVERED TODAY',
+      value: energyToday !== null ? `${energyToday.toFixed(1)}` : '—',
+      sub: energyToday !== null ? 'kWh delivered' : 'Coming soon',
+      color: '#00ff88',
+      icon: '🔋',
+    },
+    {
+      label: 'CURRENTLY CHARGING',
+      value: chargingNow !== null ? chargingNow.toString() : '—',
+      sub: chargingNow !== null ? 'Active right now' : 'Coming soon',
+      color: '#a855f7',
+      icon: '⚡',
+    },
+    {
+      label: 'FAULTED',
+      value: faultedNow !== null ? faultedNow.toString() : '—',
+      sub: faultedNow !== null ? 'Needs attention' : 'Coming soon',
+      color: faultedNow && faultedNow > 0 ? '#ff4444' : '#64748b',
+      icon: '⚠',
+    },
+  ]
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #080c14 0%, #0d1421 50%, #080c14 100%)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
@@ -126,7 +184,32 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* KPI CARDS */}
+        {/* BUSINESS OVERVIEW — "how is my charging business doing right now" */}
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 10, color: '#334155', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Today</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {businessKpis.map((kpi, i) => (
+              <div key={i} style={{
+                background: 'rgba(13,20,33,0.85)', borderRadius: 12, padding: '18px 22px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                boxShadow: '0 0 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+                position: 'relative', overflow: 'hidden',
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${kpi.color}, transparent)`, opacity: 0.6 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <p style={{ fontSize: 9, color: '#64748b', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>{kpi.label}</p>
+                    <p style={{ fontSize: 30, fontWeight: 800, color: kpi.color, lineHeight: 1, textShadow: kpi.value !== '—' ? `0 0 20px ${kpi.color}80` : 'none' }}>{kpi.value}</p>
+                    <p style={{ fontSize: 10, color: '#334155', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
+                  </div>
+                  <span style={{ fontSize: 22, color: kpi.color, opacity: 0.4 }}>{kpi.icon}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* KPI CARDS — uptime */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
           {[
             { label: 'FLEET UPTIME 24H', value: `${avg('uptime24h')}%`, color: getUptimeColor(parseFloat(avg('uptime24h'))), icon: '◉', sub: 'Last 24 hours' },
@@ -267,4 +350,5 @@ export default function Dashboard() {
       </div>
     </div>
   )
-}
+        }
+  
