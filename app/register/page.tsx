@@ -1,11 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+interface Site { id: string; name: string }
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({ chargerId: '', nickname: '', location: '' })
+  const [formData, setFormData] = useState({ chargerId: '', nickname: '', location: '', siteId: '' })
+  const [sites, setSites] = useState<Site[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    fetch('/api/sites')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setSites(data) })
+      .catch(() => {})
+  }, [])
 
   const handleSubmit = async () => {
     if (!formData.chargerId || !formData.nickname) {
@@ -22,9 +32,19 @@ export default function RegisterPage() {
       })
       const data = await res.json()
       if (res.ok) {
+        // Site assignment is a separate, non-fatal step — the charger is
+        // already registered either way, so a failure here shouldn't look
+        // like the whole registration failed.
+        if (formData.siteId) {
+          await fetch(`/api/chargers/${encodeURIComponent(formData.chargerId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ siteId: formData.siteId }),
+          }).catch(() => {})
+        }
         setStatus('success')
         setMessage(`Charger "${formData.nickname}" registered successfully!`)
-        setFormData({ chargerId: '', nickname: '', location: '' })
+        setFormData({ chargerId: '', nickname: '', location: '', siteId: '' })
       } else if (data.error === 'UPGRADE_REQUIRED') {
         setStatus('error')
         setMessage('You need a paid plan to add more chargers. Click Upgrade to subscribe!')
@@ -113,6 +133,21 @@ export default function RegisterPage() {
               onChange={e => setFormData({ ...formData, location: e.target.value })}
               placeholder="e.g. Johannesburg Depot, Gate 2" style={inputStyle} />
           </div>
+
+          {sites.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Site</label>
+              <select value={formData.siteId}
+                onChange={e => setFormData({ ...formData, siteId: e.target.value })}
+                style={{ ...inputStyle, appearance: 'none' as const }}>
+                <option value="">No site (unassigned)</option>
+                {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <p style={{ color: '#334155', fontSize: 11, marginTop: 6 }}>
+                Groups this charger for fleet reporting and the map view. <a href="/sites" style={{ color: '#00d4ff' }}>Manage sites</a>
+              </p>
+            </div>
+          )}
 
           <button onClick={handleSubmit} disabled={status === 'loading'} style={{
             width: '100%', padding: 14, borderRadius: 10, fontSize: 15, fontWeight: 800,

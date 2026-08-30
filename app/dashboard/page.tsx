@@ -202,6 +202,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {[
               { href: '/register', label: '+ ADD', color: '#00ff88', bg: 'rgba(0,255,136,0.1)', border: 'rgba(0,255,136,0.3)' },
+              { href: '/sites', label: 'SITES', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
               { href: '/events', label: 'EVENTS', color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)' },
               { href: '/alerts', label: 'ALERTS', color: '#ff4444', bg: 'rgba(255,68,68,0.1)', border: 'rgba(255,68,68,0.3)' },
               { href: '/pricing', label: 'UPGRADE', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
