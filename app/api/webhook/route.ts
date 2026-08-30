@@ -75,8 +75,12 @@ async function recordSubscription(customerEmail: string, planName: string, custo
     const user = users?.users?.find(u => u.email === customerEmail)
 
     if (user) {
-      const plan = planName.toLowerCase().includes('enterprise') ? 'Enterprise' :
-                   planName.toLowerCase().includes('plus') ? 'Plus' : 'Pro'
+      const p = planName.toLowerCase()
+      const plan = p.includes('enterprise') ? 'Enterprise' :
+                   p.includes('growth') ? 'Growth' :
+                   p.includes('starter') ? 'Starter' :
+                   planName // unknown product name — store as-is rather than
+                            // silently mislabeling it as a tier it isn't
 
       await adminClient.from('user_subscriptions').upsert({
         user_id: user.id,

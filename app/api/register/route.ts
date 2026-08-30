@@ -12,10 +12,10 @@ function getAdminClient() {
 function getPlanLimit(plan: string | null, status: string | null): number {
   if (status === 'active') {
     const p = (plan || '').toLowerCase()
-    if (p.includes('enterprise') || p.includes('unlimited')) return 999
-    if (p.includes('plus')) return 5
-    if (p.includes('pro')) return 1
-    return 1
+    if (p.includes('enterprise')) return 999
+    if (p.includes('growth')) return 10
+    if (p.includes('starter')) return 1
+    return 1 // unrecognized plan name — fail safe to the lowest tier
   }
   if (status === 'trial') return 1
   return 0
