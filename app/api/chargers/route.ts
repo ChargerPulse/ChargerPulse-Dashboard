@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+type ChargerStatus = 'available' | 'charging' | 'faulted' | 'offline'
+
 export async function GET() {
   try {
     const cookieStore = await cookies()
@@ -37,6 +39,36 @@ export async function GET() {
 
     if (!chargers || chargers.length === 0) return Response.json([])
 
+    const chargerIds = chargers.map(c => c.id)
+
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+
+    const [{ data: statusRows }, { data: sessionRows }] = await Promise.all([
+      supabase
+        .from('charger_status')
+        .select('cp_id, status')
+        .in('cp_id', chargerIds),
+      supabase
+        .from('sessions')
+        .select('cp_id, energy_kwh')
+        .in('cp_id', chargerIds)
+        .gte('started_at', startOfToday.toISOString()),
+    ])
+
+    const statusByCharger = new Map(
+      (statusRows || []).map(r => [r.cp_id, r.status])
+    )
+
+    const sessionsTodayByCharger = new Map<string, number>()
+    const energyTodayByCharger = new Map<string, number>()
+    for (const s of sessionRows || []) {
+      sessionsTodayByCharger.set(s.cp_id, (sessionsTodayByCharger.get(s.cp_id) || 0) + 1)
+      if (typeof s.energy_kwh === 'number') {
+        energyTodayByCharger.set(s.cp_id, (energyTodayByCharger.get(s.cp_id) || 0) + s.energy_kwh)
+      }
+    }
+
     const now = new Date()
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -51,6 +83,19 @@ export async function GET() {
           .gte('ts', thirtyDaysAgo.toISOString())
           .order('ts', { ascending: false })
 
+        // charger_status / today's sessions may exist even if there's no
+        // recent StatusNotification history, so these are read independent
+        // of the `events`-derived uptime numbers below.
+        const liveExtras = {
+          status: statusByCharger.get(charger.id) as ChargerStatus | undefined,
+          sessionsToday: sessionsTodayByCharger.has(charger.id)
+            ? sessionsTodayByCharger.get(charger.id)
+            : undefined,
+          energyTodayKwh: energyTodayByCharger.has(charger.id)
+            ? energyTodayByCharger.get(charger.id)
+            : undefined,
+        }
+
         if (!events || events.length === 0) {
           return {
             id: charger.id,
@@ -58,7 +103,8 @@ export async function GET() {
             uptime24h: 0,
             uptime7d: 0,
             uptime30d: 0,
-            lastUpdate: 'No data yet'
+            lastUpdate: 'No data yet',
+            ...liveExtras,
           }
         }
 
@@ -75,7 +121,8 @@ export async function GET() {
           uptime24h: calcUptime(oneDayAgo),
           uptime7d: calcUptime(sevenDaysAgo),
           uptime30d: calcUptime(thirtyDaysAgo),
-          lastUpdate: new Date(events[0].ts).toLocaleTimeString()
+          lastUpdate: new Date(events[0].ts).toLocaleTimeString(),
+          ...liveExtras,
         }
       })
     )
