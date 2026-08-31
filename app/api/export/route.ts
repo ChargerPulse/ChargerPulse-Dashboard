@@ -1,9 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   try {
@@ -13,17 +9,40 @@ export async function GET(request: Request) {
     const since = new Date()
     since.setDate(since.getDate() - days)
 
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options))
+          },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return new Response('Not authenticated', { status: 401 })
+    }
+
     const { data: chargers } = await supabase
       .from('chargers')
       .select('*')
+      .eq('user_id', user.id)
 
     if (!chargers || chargers.length === 0) {
       return new Response('No chargers found', { status: 404 })
     }
 
+    const chargerIds = chargers.map(c => c.id)
     const { data: events } = await supabase
       .from('events')
       .select('*')
+      .in('cp_id', chargerIds)
       .gte('ts', since.toISOString())
 
     const rows = chargers.map(charger => {
