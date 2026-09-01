@@ -59,6 +59,23 @@ export async function GET(
       .eq('cp_id', id)
       .order('triggered_at', { ascending: false })
 
+    const { data: statusRow } = await supabase
+      .from('charger_status')
+      .select('status')
+      .eq('cp_id', id)
+      .maybeSingle()
+
+    // The transaction currently in progress, if any — RemoteStopTransaction
+    // needs to reference it by its OCPP transactionId.
+    const { data: activeSession } = await supabase
+      .from('sessions')
+      .select('ocpp_transaction_id')
+      .eq('cp_id', id)
+      .is('stopped_at', null)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
     const calcUptime = (since: Date) => {
       const filtered = (events || []).filter(e => new Date(e.ts) > since)
       if (filtered.length === 0) return 0
@@ -68,6 +85,8 @@ export async function GET(
 
     return Response.json({
       charger,
+      liveStatus: statusRow?.status || null,
+      activeTransactionId: activeSession?.ocpp_transaction_id ?? null,
       uptime24h: calcUptime(oneDayAgo),
       uptime7d: calcUptime(sevenDaysAgo),
       uptime30d: calcUptime(thirtyDaysAgo),

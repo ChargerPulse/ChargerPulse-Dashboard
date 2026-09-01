@@ -10,6 +10,8 @@ interface ChargerDetail {
     location: string
     created_at: string
   }
+  liveStatus: string | null
+  activeTransactionId: number | null
   uptime24h: number
   uptime7d: number
   uptime30d: number
@@ -27,6 +29,8 @@ interface ChargerDetail {
   }>
 }
 
+type CommandAction = 'RemoteStartTransaction' | 'RemoteStopTransaction' | 'Reset' | 'UnlockConnector'
+
 export default function ChargerDetailPage({
   params,
 }: {
@@ -35,19 +39,60 @@ export default function ChargerDetailPage({
   const [data, setData] = useState<ChargerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [chargerId, setChargerId] = useState('')
+  const [pendingAction, setPendingAction] = useState<CommandAction | null>(null)
+  const [commandMessage, setCommandMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const refresh = (id: string) => {
+    fetch(`/api/chargers/${id}`)
+      .then(res => res.json())
+      .then(d => {
+        setData(d)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }
 
   useEffect(() => {
     params.then(({ id }) => {
       setChargerId(id)
-      fetch(`/api/chargers/${id}`)
-        .then(res => res.json())
-        .then(d => {
-          setData(d)
-          setLoading(false)
-        })
-        .catch(() => setLoading(false))
+      refresh(id)
     })
   }, [params])
+
+  const runCommand = async (action: CommandAction, payload: Record<string, unknown>, confirmText: string) => {
+    if (!window.confirm(confirmText)) return
+
+    setPendingAction(action)
+    setCommandMessage(null)
+    try {
+      const res = await fetch(`/api/chargers/${chargerId}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload }),
+      })
+      const result = await res.json()
+
+      if (result.status === 'accepted') {
+        setCommandMessage({ type: 'success', text: `${action} accepted by the charger.` })
+      } else if (result.status === 'rejected') {
+        setCommandMessage({ type: 'error', text: `${action} was rejected by the charger.` })
+      } else if (result.status === 'not_connected') {
+        setCommandMessage({ type: 'error', text: 'Charger is not currently connected.' })
+      } else if (result.status === 'timeout') {
+        setCommandMessage({ type: 'error', text: 'Charger did not respond in time.' })
+      } else {
+        setCommandMessage({ type: 'error', text: result.error || 'Something went wrong.' })
+      }
+      refresh(chargerId)
+    } catch {
+      setCommandMessage({ type: 'error', text: 'Failed to reach the server.' })
+    } finally {
+      setPendingAction(null)
+    }
+  }
+
+  const isOnline = data?.liveStatus && data.liveStatus !== 'offline'
+  const isCharging = data?.liveStatus === 'charging'
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -125,6 +170,84 @@ export default function ChargerDetailPage({
             </div>
           </div>
         )}
+
+        {/* Remote command result banner */}
+        {commandMessage && (
+          <div className={`px-6 py-4 rounded-lg mb-6 flex items-center gap-3 border ${
+            commandMessage.type === 'success'
+              ? 'bg-green-100 border-green-400 text-green-700'
+              : 'bg-red-100 border-red-400 text-red-700'
+          }`}>
+            <span className="text-xl">{commandMessage.type === 'success' ? '✅' : '⚠️'}</span>
+            <p>{commandMessage.text}</p>
+          </div>
+        )}
+
+        {/* Remote Commands */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800">🎛️ Remote Commands</h2>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isOnline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              {isOnline ? '● Connected' : '○ Not connected'}
+            </span>
+          </div>
+
+          {!isOnline && (
+            <p className="text-gray-500 text-sm mb-4">Commands are disabled while this charger isn&apos;t connected.</p>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button
+              disabled={!isOnline || isCharging || pendingAction !== null}
+              onClick={() => runCommand(
+                'RemoteStartTransaction',
+                { connectorId: 1, idTag: 'REMOTESTART' },
+                'Start a charging session on this charger now?'
+              )}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+            >
+              {pendingAction === 'RemoteStartTransaction' ? 'Starting…' : '▶ Start'}
+            </button>
+
+            <button
+              disabled={!isOnline || !isCharging || pendingAction !== null || data?.activeTransactionId == null}
+              onClick={() => runCommand(
+                'RemoteStopTransaction',
+                { transactionId: data?.activeTransactionId },
+                'Stop the current charging session? This will interrupt the vehicle currently charging.'
+              )}
+              className="bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+            >
+              {pendingAction === 'RemoteStopTransaction' ? 'Stopping…' : '■ Stop'}
+            </button>
+
+            <button
+              disabled={!isOnline || pendingAction !== null}
+              onClick={() => runCommand(
+                'Reset',
+                { type: 'Soft' },
+                isCharging
+                  ? 'This charger has an active charging session. Resetting it now will interrupt that session. Continue?'
+                  : 'Reboot this charger (soft reset)?'
+              )}
+              className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+            >
+              {pendingAction === 'Reset' ? 'Resetting…' : '⟳ Reset'}
+            </button>
+
+            <button
+              disabled={!isOnline || pendingAction !== null}
+              onClick={() => runCommand(
+                'UnlockConnector',
+                { connectorId: 1 },
+                'Unlock this charger\'s connector?'
+              )}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+            >
+              {pendingAction === 'UnlockConnector' ? 'Unlocking…' : '🔓 Unlock'}
+            </button>
+          </div>
+        </div>
 
         {/* Info cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
