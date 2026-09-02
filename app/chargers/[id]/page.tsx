@@ -31,6 +31,18 @@ interface ChargerDetail {
 
 type CommandAction = 'RemoteStartTransaction' | 'RemoteStopTransaction' | 'Reset' | 'UnlockConnector'
 
+const COLORS = {
+  cyan: '#00d4ff',
+  purple: '#a855f7',
+  green: '#00ff88',
+  red: '#ff4444',
+  amber: '#f59e0b',
+  text: '#e2e8f0',
+  muted: '#94a3b8',
+  faint: '#64748b',
+  border: 'rgba(255,255,255,0.08)',
+}
+
 export default function ChargerDetailPage({
   params,
 }: {
@@ -94,14 +106,14 @@ export default function ChargerDetailPage({
   const isOnline = data?.liveStatus && data.liveStatus !== 'offline'
   const isCharging = data?.liveStatus === 'charging'
 
-  const getStatusStyle = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Available': return 'bg-green-100 text-green-700'
+      case 'Available': return COLORS.green
       case 'Occupied':
-      case 'Charging': return 'bg-blue-100 text-blue-700'
-      case 'Faulted': return 'bg-red-100 text-red-700'
-      case 'Unavailable': return 'bg-yellow-100 text-yellow-700'
-      default: return 'bg-gray-100 text-gray-600'
+      case 'Charging': return COLORS.cyan
+      case 'Faulted': return COLORS.red
+      case 'Unavailable': return COLORS.amber
+      default: return COLORS.faint
     }
   }
 
@@ -116,20 +128,32 @@ export default function ChargerDetailPage({
     }
   }
 
+  const cardStyle = {
+    background: 'rgba(13,20,40,0.75)',
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: 16,
+    backdropFilter: 'blur(20px)' as const,
+  }
+
+  const sectionTitleStyle = {
+    fontSize: 16, fontWeight: 700, color: COLORS.text, marginBottom: 16,
+    display: 'flex', alignItems: 'center', gap: 8,
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <p className="text-gray-500 text-xl">Loading charger data...</p>
+      <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: COLORS.muted, fontSize: 18 }}>Loading charger data...</p>
       </div>
     )
   }
 
   if (!data || !data.charger) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 text-xl mb-4">Charger not found</p>
-          <a href="/" className="text-blue-600 underline">Back to Dashboard</a>
+      <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: COLORS.muted, fontSize: 18, marginBottom: 16 }}>Charger not found</p>
+          <a href="/dashboard" style={{ color: COLORS.cyan }}>Back to Dashboard</a>
         </div>
       </div>
     )
@@ -143,60 +167,90 @@ export default function ChargerDetailPage({
 
   const activeAlert = data.alerts.find(a => !a.resolved)
 
+  const commandButtonStyle = (color: string, disabled: boolean) => ({
+    padding: '14px 12px',
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 800,
+    border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    background: disabled ? 'rgba(255,255,255,0.04)' : `${color}18`,
+    color: disabled ? COLORS.faint : color,
+    boxShadow: disabled ? 'none' : `0 0 0 1px ${color}40 inset`,
+  })
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="space-bg" style={{ padding: 24, paddingBottom: 60 }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-1">
+            <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
               ⚡ {data.charger.nickname}
             </h1>
-            <p className="text-gray-500 font-mono">{data.charger.id}</p>
+            <p style={{ color: COLORS.faint, fontFamily: 'monospace', fontSize: 13, letterSpacing: 1 }}>{data.charger.id}</p>
           </div>
-          <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+          <a href="/dashboard" style={{
+            background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)',
+            color: COLORS.cyan, padding: '10px 20px', borderRadius: 10,
+            textDecoration: 'none', fontWeight: 700, fontSize: 13,
+          }}>
             ← Dashboard
           </a>
         </div>
 
         {/* Active alert banner */}
         {activeAlert && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-6 flex items-center gap-3">
-            <span className="text-2xl">🚨</span>
+          <div style={{
+            background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.3)',
+            borderRadius: 12, padding: '14px 18px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{ fontSize: 22 }}>🚨</span>
             <div>
-              <strong>This charger is currently DOWN!</strong>
-              <p className="text-sm">Alert triggered at {new Date(activeAlert.triggered_at).toLocaleString()}</p>
+              <strong style={{ color: COLORS.red }}>This charger is currently DOWN</strong>
+              <p style={{ color: COLORS.muted, fontSize: 13, marginTop: 2 }}>
+                Alert triggered at {new Date(activeAlert.triggered_at).toLocaleString()}
+              </p>
             </div>
           </div>
         )}
 
         {/* Remote command result banner */}
         {commandMessage && (
-          <div className={`px-6 py-4 rounded-lg mb-6 flex items-center gap-3 border ${
-            commandMessage.type === 'success'
-              ? 'bg-green-100 border-green-400 text-green-700'
-              : 'bg-red-100 border-red-400 text-red-700'
-          }`}>
-            <span className="text-xl">{commandMessage.type === 'success' ? '✅' : '⚠️'}</span>
-            <p>{commandMessage.text}</p>
+          <div style={{
+            background: commandMessage.type === 'success' ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,68,0.08)',
+            border: `1px solid ${commandMessage.type === 'success' ? 'rgba(0,255,136,0.3)' : 'rgba(255,68,68,0.3)'}`,
+            borderRadius: 12, padding: '14px 18px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{ fontSize: 18 }}>{commandMessage.type === 'success' ? '✅' : '⚠️'}</span>
+            <p style={{ color: COLORS.muted, fontSize: 14 }}>{commandMessage.text}</p>
           </div>
         )}
 
         {/* Remote Commands */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">🎛️ Remote Commands</h2>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isOnline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-              {isOnline ? '● Connected' : '○ Not connected'}
+        <div style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <p style={sectionTitleStyle}>🎛️ Remote Commands</p>
+            <span style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: '4px 10px', borderRadius: 20,
+              background: isOnline ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.04)',
+              color: isOnline ? COLORS.green : COLORS.faint,
+              border: `1px solid ${isOnline ? 'rgba(0,255,136,0.3)' : COLORS.border}`,
+            }}>
+              {isOnline ? '● CONNECTED' : '○ NOT CONNECTED'}
             </span>
           </div>
 
           {!isOnline && (
-            <p className="text-gray-500 text-sm mb-4">Commands are disabled while this charger isn&apos;t connected.</p>
+            <p style={{ color: COLORS.faint, fontSize: 13, marginBottom: 16 }}>
+              Commands are disabled while this charger isn&apos;t connected.
+            </p>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 16 }}>
             <button
               disabled={!isOnline || isCharging || pendingAction !== null}
               onClick={() => runCommand(
@@ -204,7 +258,7 @@ export default function ChargerDetailPage({
                 { connectorId: 1, idTag: 'REMOTESTART' },
                 'Start a charging session on this charger now?'
               )}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+              style={commandButtonStyle(COLORS.green, !isOnline || isCharging || pendingAction !== null)}
             >
               {pendingAction === 'RemoteStartTransaction' ? 'Starting…' : '▶ Start'}
             </button>
@@ -216,7 +270,7 @@ export default function ChargerDetailPage({
                 { transactionId: data?.activeTransactionId },
                 'Stop the current charging session? This will interrupt the vehicle currently charging.'
               )}
-              className="bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+              style={commandButtonStyle(COLORS.red, !isOnline || !isCharging || pendingAction !== null || data?.activeTransactionId == null)}
             >
               {pendingAction === 'RemoteStopTransaction' ? 'Stopping…' : '■ Stop'}
             </button>
@@ -230,7 +284,7 @@ export default function ChargerDetailPage({
                   ? 'This charger has an active charging session. Resetting it now will interrupt that session. Continue?'
                   : 'Reboot this charger (soft reset)?'
               )}
-              className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+              style={commandButtonStyle(COLORS.amber, !isOnline || pendingAction !== null)}
             >
               {pendingAction === 'Reset' ? 'Resetting…' : '⟳ Reset'}
             </button>
@@ -242,7 +296,7 @@ export default function ChargerDetailPage({
                 { connectorId: 1 },
                 'Unlock this charger\'s connector?'
               )}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm"
+              style={commandButtonStyle(COLORS.cyan, !isOnline || pendingAction !== null)}
             >
               {pendingAction === 'UnlockConnector' ? 'Unlocking…' : '🔓 Unlock'}
             </button>
@@ -250,63 +304,72 @@ export default function ChargerDetailPage({
         </div>
 
         {/* Info cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-5">
-            <p className="text-gray-500 text-sm font-semibold mb-1">Location</p>
-            <p className="text-gray-800 font-semibold">{data.charger.location || 'Not set'}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 16 }}>
+          <div style={{ ...cardStyle, padding: '18px 20px' }}>
+            <p style={{ color: COLORS.faint, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Location</p>
+            <p style={{ color: COLORS.text, fontWeight: 700 }}>{data.charger.location || 'Not set'}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-5">
-            <p className="text-gray-500 text-sm font-semibold mb-1">24h Uptime</p>
-            <p className={`text-2xl font-bold ${data.uptime24h >= 95 ? 'text-green-600' : 'text-yellow-600'}`}>
+          <div style={{ ...cardStyle, padding: '18px 20px' }}>
+            <p style={{ color: COLORS.faint, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>24h Uptime</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: data.uptime24h >= 95 ? COLORS.green : COLORS.amber }}>
               {data.uptime24h}%
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-5">
-            <p className="text-gray-500 text-sm font-semibold mb-1">7d Uptime</p>
-            <p className={`text-2xl font-bold ${data.uptime7d >= 95 ? 'text-green-600' : 'text-yellow-600'}`}>
+          <div style={{ ...cardStyle, padding: '18px 20px' }}>
+            <p style={{ color: COLORS.faint, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>7d Uptime</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: data.uptime7d >= 95 ? COLORS.green : COLORS.amber }}>
               {data.uptime7d}%
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-5">
-            <p className="text-gray-500 text-sm font-semibold mb-1">30d Uptime</p>
-            <p className={`text-2xl font-bold ${data.uptime30d >= 95 ? 'text-green-600' : 'text-yellow-600'}`}>
+          <div style={{ ...cardStyle, padding: '18px 20px' }}>
+            <p style={{ color: COLORS.faint, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>30d Uptime</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: data.uptime30d >= 95 ? COLORS.green : COLORS.amber }}>
               {data.uptime30d}%
             </p>
           </div>
         </div>
 
         {/* Uptime chart */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Uptime by Period</h2>
-          <ResponsiveContainer width="100%" height={250}>
+        <div style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
+          <p style={sectionTitleStyle}>📊 Uptime by Period</p>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="period" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip formatter={(val) => `${val}%`} />
-              <Bar dataKey="uptime" fill="#2563eb" radius={[4, 4, 0, 0]} name="Uptime %" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="period" stroke={COLORS.faint} tick={{ fill: COLORS.faint, fontSize: 12 }} />
+              <YAxis domain={[0, 100]} stroke={COLORS.faint} tick={{ fill: COLORS.faint, fontSize: 12 }} />
+              <Tooltip
+                formatter={(val) => `${val}%`}
+                contentStyle={{ background: '#0d1421', border: `1px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.text }}
+              />
+              <Bar dataKey="uptime" fill={COLORS.cyan} radius={[4, 4, 0, 0]} name="Uptime %" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
 
           {/* Recent Events */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">📋 Recent Events</h2>
+          <div style={{ ...cardStyle, padding: 24 }}>
+            <p style={sectionTitleStyle}>📋 Recent Events</p>
             {data.recentEvents.length === 0 ? (
-              <p className="text-gray-500">No events yet.</p>
+              <p style={{ color: COLORS.faint, fontSize: 14 }}>No events yet.</p>
             ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 320, overflowY: 'auto' }}>
                 {data.recentEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <div key={event.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 0', borderBottom: `1px solid ${COLORS.border}`,
+                  }}>
                     <div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusStyle(event.status)}`}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                        background: `${getStatusColor(event.status)}18`, color: getStatusColor(event.status),
+                      }}>
                         {getStatusIcon(event.status)} {event.status}
                       </span>
-                      <p className="text-gray-400 text-xs mt-1">Connector #{event.connector_id}</p>
+                      <p style={{ color: COLORS.faint, fontSize: 11, marginTop: 4 }}>Connector #{event.connector_id}</p>
                     </div>
-                    <p className="text-gray-500 text-xs">{new Date(event.ts).toLocaleString()}</p>
+                    <p style={{ color: COLORS.faint, fontSize: 11 }}>{new Date(event.ts).toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -314,27 +377,31 @@ export default function ChargerDetailPage({
           </div>
 
           {/* Alert History */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">🚨 Alert History</h2>
+          <div style={{ ...cardStyle, padding: 24 }}>
+            <p style={sectionTitleStyle}>🚨 Alert History</p>
             {data.alerts.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-green-600 font-semibold">✅ No alerts ever!</p>
-                <p className="text-gray-500 text-sm mt-1">This charger has been reliable.</p>
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <p style={{ color: COLORS.green, fontWeight: 700 }}>✅ No alerts ever!</p>
+                <p style={{ color: COLORS.faint, fontSize: 13, marginTop: 4 }}>This charger has been reliable.</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 320, overflowY: 'auto' }}>
                 {data.alerts.map(alert => (
-                  <div key={alert.id} className="py-2 border-b border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${alert.resolved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div key={alert.id} style={{ padding: '10px 0', borderBottom: `1px solid ${COLORS.border}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                        background: alert.resolved ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,68,0.1)',
+                        color: alert.resolved ? COLORS.green : COLORS.red,
+                      }}>
                         {alert.resolved ? '✅ Resolved' : '🚨 Active'}
                       </span>
-                      <p className="text-gray-500 text-xs">
+                      <p style={{ color: COLORS.faint, fontSize: 11 }}>
                         {new Date(alert.triggered_at).toLocaleString()}
                       </p>
                     </div>
                     {alert.resolved_at && (
-                      <p className="text-gray-400 text-xs mt-1">
+                      <p style={{ color: COLORS.faint, fontSize: 11, marginTop: 4 }}>
                         Resolved: {new Date(alert.resolved_at).toLocaleString()}
                       </p>
                     )}
