@@ -12,6 +12,8 @@ interface ChargerDetail {
   }
   liveStatus: string | null
   activeTransactionId: number | null
+  riskLevel?: 'high' | 'medium' | 'low'
+  riskReasons?: string[]
   uptime24h: number
   uptime7d: number
   uptime30d: number
@@ -199,6 +201,28 @@ export default function ChargerDetailPage({
             ← Dashboard
           </a>
         </div>
+
+        {/* Risk assessment */}
+        {data.riskLevel && data.riskLevel !== 'low' && (
+          <div style={{
+            background: data.riskLevel === 'high' ? 'rgba(255,68,68,0.08)' : 'rgba(245,158,11,0.08)',
+            border: `1px solid ${data.riskLevel === 'high' ? 'rgba(255,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+            borderRadius: 12, padding: '14px 18px', marginBottom: 16,
+          }}>
+            <p style={{
+              fontWeight: 800, fontSize: 12, letterSpacing: 1,
+              color: data.riskLevel === 'high' ? COLORS.red : COLORS.amber, marginBottom: 6,
+            }}>
+              {data.riskLevel === 'high' ? '🔴 AT RISK' : '🟡 WATCH'}
+            </p>
+            <ul style={{ color: COLORS.muted, fontSize: 13, paddingLeft: 18, margin: 0 }}>
+              {(data.riskReasons || []).map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+            <p style={{ color: COLORS.faint, fontSize: 11, marginTop: 8 }}>
+              Based on transparent rules over recent activity — not a trained prediction model.
+            </p>
+          </div>
+        )}
 
         {/* Active alert banner */}
         {activeAlert && (

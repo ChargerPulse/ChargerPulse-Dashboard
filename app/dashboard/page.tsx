@@ -20,6 +20,8 @@ interface ChargerData {
   status?: 'available' | 'charging' | 'faulted' | 'offline'
   sessionsToday?: number
   energyTodayKwh?: number
+  riskLevel?: 'high' | 'medium' | 'low'
+  riskReasons?: string[]
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -319,13 +321,20 @@ export default function Dashboard() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    {['CHARGER ID', 'NAME', '24H', '7D', '30D', 'LAST SEEN'].map(h => (
+                    {['CHARGER ID', 'NAME', 'RISK', '24H', '7D', '30D', 'LAST SEEN'].map(h => (
                       <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, color: '#64748b', letterSpacing: 2, fontWeight: 700 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {chargers.map((charger) => (
+                  {chargers.map((charger) => {
+                    const riskColor = charger.riskLevel === 'high' ? '#ff4444'
+                      : charger.riskLevel === 'medium' ? '#f59e0b'
+                      : '#00ff88'
+                    const riskLabel = charger.riskLevel === 'high' ? 'AT RISK'
+                      : charger.riskLevel === 'medium' ? 'WATCH'
+                      : 'HEALTHY'
+                    return (
                     <tr key={charger.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.03)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -335,6 +344,12 @@ export default function Dashboard() {
                         </a>
                       </td>
                       <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: 12 }}>{charger.nickname}</td>
+                      <td style={{ padding: '14px 20px' }} title={charger.riskReasons?.join('; ') || 'No issues detected'}>
+                        <span style={{
+                          padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, letterSpacing: 1,
+                          color: riskColor, background: `${riskColor}18`, border: `1px solid ${riskColor}40`,
+                        }}>{riskLabel}</span>
+                      </td>
                       {[charger.uptime24h, charger.uptime7d, charger.uptime30d].map((val, j) => (
                         <td key={j} style={{ padding: '14px 20px' }}>
                           <span style={{
@@ -347,7 +362,8 @@ export default function Dashboard() {
                       ))}
                       <td style={{ padding: '14px 20px', color: '#64748b', fontSize: 12, fontFamily: 'monospace' }}>{charger.lastUpdate}</td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             )}

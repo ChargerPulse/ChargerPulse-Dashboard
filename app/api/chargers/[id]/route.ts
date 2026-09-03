@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { calculateRisk } from '@/lib/risk'
 
 export async function GET(
   request: Request,
@@ -83,13 +84,31 @@ export async function GET(
       return parseFloat(((available / filtered.length) * 100).toFixed(1))
     }
 
+    const uptime24h = calcUptime(oneDayAgo)
+    const uptime7d = calcUptime(sevenDaysAgo)
+    const uptime30d = calcUptime(thirtyDaysAgo)
+
+    const faultCount7d = (events || []).filter(
+      e => e.status === 'Faulted' && new Date(e.ts) > sevenDaysAgo
+    ).length
+
+    const risk = calculateRisk({
+      faultCount7d,
+      uptime24h,
+      uptime7d,
+      uptime30d,
+      isOffline: !statusRow || statusRow.status === 'offline',
+    })
+
     return Response.json({
       charger,
       liveStatus: statusRow?.status || null,
       activeTransactionId: activeSession?.ocpp_transaction_id ?? null,
-      uptime24h: calcUptime(oneDayAgo),
-      uptime7d: calcUptime(sevenDaysAgo),
-      uptime30d: calcUptime(thirtyDaysAgo),
+      uptime24h,
+      uptime7d,
+      uptime30d,
+      riskLevel: risk.level,
+      riskReasons: risk.reasons,
       recentEvents: events || [],
       alerts: alerts || [],
     })
