@@ -105,6 +105,28 @@ export default function ChargerDetailPage({
     }
   }
 
+  const [insight, setInsight] = useState<string | null>(null)
+  const [insightLoading, setInsightLoading] = useState(false)
+  const [insightError, setInsightError] = useState<string | null>(null)
+
+  const generateInsight = async () => {
+    setInsightLoading(true)
+    setInsightError(null)
+    try {
+      const res = await fetch(`/api/chargers/${chargerId}/insight`)
+      const result = await res.json()
+      if (res.ok) {
+        setInsight(result.summary)
+      } else {
+        setInsightError(result.error || 'Could not generate insight.')
+      }
+    } catch {
+      setInsightError('Failed to reach the server.')
+    } finally {
+      setInsightLoading(false)
+    }
+  }
+
   const isOnline = data?.liveStatus && data.liveStatus !== 'offline'
   const isCharging = data?.liveStatus === 'charging'
 
@@ -325,6 +347,40 @@ export default function ChargerDetailPage({
               {pendingAction === 'UnlockConnector' ? 'Unlocking…' : '🔓 Unlock'}
             </button>
           </div>
+        </div>
+
+        {/* AI Insight */}
+        <div style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <p style={sectionTitleStyle}>✨ AI Health Summary</p>
+            <button
+              onClick={generateInsight}
+              disabled={insightLoading}
+              style={{
+                padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, border: 'none',
+                cursor: insightLoading ? 'not-allowed' : 'pointer',
+                background: insightLoading ? 'rgba(255,255,255,0.04)' : `${COLORS.purple}18`,
+                color: insightLoading ? COLORS.faint : COLORS.purple,
+                boxShadow: insightLoading ? 'none' : `0 0 0 1px ${COLORS.purple}40 inset`,
+              }}
+            >
+              {insightLoading ? 'Thinking…' : insight ? 'Regenerate' : 'Generate'}
+            </button>
+          </div>
+
+          {!insight && !insightLoading && !insightError && (
+            <p style={{ color: COLORS.faint, fontSize: 13 }}>
+              Generate a plain-English summary of this charger&apos;s recent activity.
+            </p>
+          )}
+
+          {insightError && (
+            <p style={{ color: COLORS.red, fontSize: 13 }}>{insightError}</p>
+          )}
+
+          {insight && (
+            <p style={{ color: COLORS.text, fontSize: 14, lineHeight: 1.6 }}>{insight}</p>
+          )}
         </div>
 
         {/* Info cards */}
