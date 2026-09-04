@@ -103,13 +103,30 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text()
     const signature = request.headers.get('x-signature')
 
-    if (WEBHOOK_SECRET && signature) {
-      const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET)
-      hmac.update(rawBody)
-      const digest = hmac.digest('hex')
-      if (digest !== signature) {
-        return new Response('Unauthorized', { status: 401 })
-      }
+    // Fail closed: a missing secret, missing signature header, or a
+    // mismatched signature all reject the request. The previous version
+    // only checked the signature *if both* WEBHOOK_SECRET and the header
+    // were present — meaning a request with no signature header at all
+    // skipped verification entirely and was processed as legitimate. That
+    // meant anyone could POST a crafted "subscription_created" payload for
+    // any known account email and grant it a free active subscription.
+    if (!WEBHOOK_SECRET) {
+      console.error('❌ LEMONSQUEEZY_WEBHOOK_SECRET is not configured — rejecting webhook')
+      return new Response('Server misconfigured', { status: 500 })
+    }
+    if (!signature) {
+      return new Response('Unauthorized', { status: 401 })
+    }
+    const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET)
+    hmac.update(rawBody)
+    const digest = hmac.digest('hex')
+    const digestBuffer = Buffer.from(digest, 'utf8')
+    const signatureBuffer = Buffer.from(signature, 'utf8')
+    if (
+      digestBuffer.length !== signatureBuffer.length ||
+      !crypto.timingSafeEqual(digestBuffer, signatureBuffer)
+    ) {
+      return new Response('Unauthorized', { status: 401 })
     }
 
     const payload = JSON.parse(rawBody)
