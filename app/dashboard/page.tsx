@@ -20,6 +20,9 @@ interface ChargerData {
   status?: 'available' | 'charging' | 'faulted' | 'offline'
   sessionsToday?: number
   energyTodayKwh?: number
+  revenueToday?: number
+  pricePerKwh?: number
+  currency?: string
   riskLevel?: 'high' | 'medium' | 'low'
   riskReasons?: string[]
 }
@@ -90,7 +93,7 @@ export default function Dashboard() {
   // --- Business Overview helpers ---------------------------------------
   // Returns null (not 0) when no charger reports the field, so the UI can
   // tell "genuinely zero" apart from "backend doesn't send this yet".
-  const sumOptional = (key: 'sessionsToday' | 'energyTodayKwh'): number | null => {
+  const sumOptional = (key: 'sessionsToday' | 'energyTodayKwh' | 'revenueToday'): number | null => {
     const withData = chargers.filter(c => typeof c[key] === 'number')
     if (withData.length === 0) return null
     return withData.reduce((a, c) => a + ((c[key] as number) || 0), 0)
@@ -104,6 +107,9 @@ export default function Dashboard() {
 
   const sessionsToday = sumOptional('sessionsToday')
   const energyToday = sumOptional('energyTodayKwh')
+  const revenueToday = sumOptional('revenueToday')
+  const currency = chargers.find(c => c.currency)?.currency || 'ZAR'
+  const tariffSet = chargers.some(c => (c.pricePerKwh || 0) > 0)
   const chargingNow = countByStatus('charging')
   const faultedNow = countByStatus('faulted')
 
@@ -182,6 +188,13 @@ export default function Dashboard() {
       color: faultedNow && faultedNow > 0 ? '#ff4444' : '#64748b',
       icon: '⚠',
     },
+    {
+      label: 'ESTIMATED REVENUE',
+      value: tariffSet && revenueToday !== null ? `${currency} ${revenueToday.toFixed(2)}` : '—',
+      sub: tariffSet ? 'Today, estimated' : 'Set a tariff to enable',
+      color: tariffSet ? '#f59e0b' : '#64748b',
+      icon: '💰',
+    },
   ]
 
   return (
@@ -237,8 +250,13 @@ export default function Dashboard() {
 
         {/* BUSINESS OVERVIEW — "how is my charging business doing right now" */}
         <div style={{ marginBottom: 12 }}>
-          <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Today</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+            <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 2, textTransform: 'uppercase' }}>Today</p>
+            <a href="/settings/tariff" style={{ fontSize: 11, color: '#f59e0b', textDecoration: 'none' }}>
+              {tariffSet ? 'Edit tariff' : 'Set tariff →'}
+            </a>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
             {businessKpis.map((kpi, i) => (
               <div key={i} style={{
                 background: 'rgba(13,20,33,0.85)', borderRadius: 12, padding: '18px 22px',

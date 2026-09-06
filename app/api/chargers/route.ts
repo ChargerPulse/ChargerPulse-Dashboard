@@ -45,7 +45,7 @@ export async function GET() {
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
 
-    const [{ data: statusRows }, { data: sessionRows }, { data: faultRows }] = await Promise.all([
+    const [{ data: statusRows }, { data: sessionRows }, { data: faultRows }, { data: tariff }] = await Promise.all([
       supabase
         .from('charger_status')
         .select('cp_id, status')
@@ -61,7 +61,15 @@ export async function GET() {
         .in('cp_id', chargerIds)
         .eq('status', 'Faulted')
         .gte('ts', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+      supabase
+        .from('tariffs')
+        .select('price_per_kwh, currency')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ])
+
+    const pricePerKwh = tariff?.price_per_kwh || 0
+    const currency = tariff?.currency || 'ZAR'
 
     const faultCountByCharger = new Map<string, number>()
     for (const f of faultRows || []) {
@@ -106,6 +114,11 @@ export async function GET() {
           energyTodayKwh: energyTodayByCharger.has(charger.id)
             ? energyTodayByCharger.get(charger.id)
             : undefined,
+          revenueToday: energyTodayByCharger.has(charger.id)
+            ? (energyTodayByCharger.get(charger.id)! * pricePerKwh)
+            : undefined,
+          pricePerKwh,
+          currency,
         }
 
         if (!events || events.length === 0) {
