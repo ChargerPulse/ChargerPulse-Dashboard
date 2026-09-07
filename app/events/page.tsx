@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import Sidebar from '../../components/Sidebar'
 
 interface Event {
   id: number
@@ -148,7 +149,9 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-bg" style={{ padding: '32px', minHeight: '100vh' }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar active="/events" />
+      <div className="space-bg" style={{ padding: '32px', minHeight: '100vh', flex: 1 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
@@ -156,14 +159,9 @@ export default function EventsPage() {
             <h1 style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>📋 Events Timeline</h1>
             <p style={{ color: '#64748b', fontSize: 14 }}>Live log of all OCPP charger events</p>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={handleDownloadReport} style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-              📄 PDF Report
-            </button>
-            <a href="/" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', padding: '10px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
-              ← Dashboard
-            </a>
-          </div>
+          <button onClick={handleDownloadReport} style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            📄 PDF Report
+          </button>
         </div>
 
         {/* Status counts */}
@@ -255,6 +253,7 @@ export default function EventsPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

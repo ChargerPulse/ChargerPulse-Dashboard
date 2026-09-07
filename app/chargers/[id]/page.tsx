@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import Sidebar from '../../../components/Sidebar'
 
 interface ChargerDetail {
   charger: {
@@ -166,18 +167,24 @@ export default function ChargerDetailPage({
 
   if (loading) {
     return (
-      <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: COLORS.muted, fontSize: 18 }}>Loading charger data...</p>
+      <div style={{ display: 'flex' }}>
+        <Sidebar />
+        <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          <p style={{ color: COLORS.muted, fontSize: 18 }}>Loading charger data...</p>
+        </div>
       </div>
     )
   }
 
   if (!data || !data.charger) {
     return (
-      <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ color: COLORS.muted, fontSize: 18, marginBottom: 16 }}>Charger not found</p>
-          <a href="/dashboard" style={{ color: COLORS.cyan }}>Back to Dashboard</a>
+      <div style={{ display: 'flex' }}>
+        <Sidebar />
+        <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: COLORS.muted, fontSize: 18, marginBottom: 16 }}>Charger not found</p>
+            <a href="/dashboard" style={{ color: COLORS.cyan }}>Back to Dashboard</a>
+          </div>
         </div>
       </div>
     )
@@ -204,24 +211,17 @@ export default function ChargerDetailPage({
   })
 
   return (
-    <div className="space-bg" style={{ padding: 24, paddingBottom: 60 }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar />
+      <div className="space-bg" style={{ padding: 24, paddingBottom: 60, flex: 1 }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
-              ⚡ {data.charger.nickname}
-            </h1>
-            <p style={{ color: COLORS.faint, fontFamily: 'monospace', fontSize: 13, letterSpacing: 1 }}>{data.charger.id}</p>
-          </div>
-          <a href="/dashboard" style={{
-            background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)',
-            color: COLORS.cyan, padding: '10px 20px', borderRadius: 10,
-            textDecoration: 'none', fontWeight: 700, fontSize: 13,
-          }}>
-            ← Dashboard
-          </a>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
+            ⚡ {data.charger.nickname}
+          </h1>
+          <p style={{ color: COLORS.faint, fontFamily: 'monospace', fontSize: 13, letterSpacing: 1 }}>{data.charger.id}</p>
         </div>
 
         {/* Risk assessment */}
@@ -493,6 +493,7 @@ export default function ChargerDetailPage({
 
         </div>
 
+      </div>
       </div>
     </div>
   )

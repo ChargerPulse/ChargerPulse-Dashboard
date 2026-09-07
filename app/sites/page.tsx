@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import 'leaflet/dist/leaflet.css'
+import Sidebar from '../../components/Sidebar'
 
 const SiteMap = dynamic(() => import('./SiteMap'), { ssr: false })
 
@@ -77,7 +78,9 @@ export default function SitesPage() {
   }
 
   return (
-    <div className="space-bg" style={{ padding: 32 }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar active="/sites" />
+      <div className="space-bg" style={{ padding: 32, flex: 1 }}>
       <div style={{ maxWidth: 780, margin: '0 auto' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
@@ -190,6 +193,7 @@ export default function SitesPage() {
           )}
         </div>
 
+      </div>
       </div>
     </div>
   )

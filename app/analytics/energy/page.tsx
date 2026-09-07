@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import Sidebar from '../../../components/Sidebar'
 
 interface Period { kwh: number; sessions: number; revenue: number }
 interface EnergyData {
@@ -33,8 +34,11 @@ export default function EnergyPage() {
 
   if (loading) {
     return (
-      <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: COLORS.muted, fontSize: 18 }}>Loading energy data...</p>
+      <div style={{ display: 'flex' }}>
+        <Sidebar active="/analytics/energy" />
+        <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          <p style={{ color: COLORS.muted, fontSize: 18 }}>Loading energy data...</p>
+        </div>
       </div>
     )
   }
@@ -46,21 +50,14 @@ export default function EnergyPage() {
   ]
 
   return (
-    <div className="space-bg" style={{ padding: 24, paddingBottom: 60 }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar active="/analytics/energy" />
+      <div className="space-bg" style={{ padding: 24, paddingBottom: 60, flex: 1 }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>🔋 Energy</h1>
-            <p style={{ color: COLORS.faint, fontSize: 13 }}>Delivered energy and estimated revenue across your fleet</p>
-          </div>
-          <a href="/dashboard" style={{
-            background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)',
-            color: COLORS.cyan, padding: '10px 20px', borderRadius: 10,
-            textDecoration: 'none', fontWeight: 700, fontSize: 13,
-          }}>
-            ← Dashboard
-          </a>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>🔋 Energy</h1>
+          <p style={{ color: COLORS.faint, fontSize: 13 }}>Delivered energy and estimated revenue across your fleet</p>
         </div>
 
         {/* Period summary cards */}
@@ -133,6 +130,7 @@ export default function EnergyPage() {
           )}
         </div>
 
+      </div>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Sidebar from '../../components/Sidebar'
 
 interface Site { id: string; name: string }
 
@@ -66,17 +67,14 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="space-bg" style={{ padding: 32 }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar active="/register" />
+      <div className="space-bg" style={{ padding: 32, flex: 1 }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontSize: 32, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>Add Charger</h1>
-            <p style={{ color: '#64748b' }}>Add a new EV charger to your monitoring fleet</p>
-          </div>
-          <a href="/dashboard" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 24px', borderRadius: 10, textDecoration: 'none', fontWeight: 700 }}>
-            Back to Dashboard
-          </a>
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>Add Charger</h1>
+          <p style={{ color: '#64748b' }}>Add a new EV charger to your monitoring fleet</p>
         </div>
 
         <div style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
@@ -179,6 +177,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
+      </div>
       </div>
     </div>
   )

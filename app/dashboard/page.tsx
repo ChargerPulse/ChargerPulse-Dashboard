@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { createClient } from '../../lib/supabase'
+import Sidebar from '../../components/Sidebar'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -113,6 +114,13 @@ export default function Dashboard() {
   const chargingNow = countByStatus('charging')
   const faultedNow = countByStatus('faulted')
 
+  const statusCounts = {
+    available: chargers.filter(c => c.status === 'available').length,
+    charging: chargers.filter(c => c.status === 'charging').length,
+    faulted: chargers.filter(c => c.status === 'faulted').length,
+    offline: chargers.filter(c => !c.status || c.status === 'offline').length,
+  }
+
   // Builds a PDF straight from what's already on screen — every figure in
   // the report is the same number the operator is looking at, nothing is
   // pulled from anywhere else or recalculated differently.
@@ -198,46 +206,18 @@ export default function Dashboard() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #080c14 0%, #0d1421 50%, #080c14 100%)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar active="/dashboard" />
+      <div style={{ flex: 1, minHeight: '100vh', background: 'linear-gradient(135deg, #080c14 0%, #0d1421 50%, #080c14 100%)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
 
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0 }} />
 
       <div style={{ maxWidth: 1400, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
-        {/* TOP NAV */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, paddingBottom: 20, borderBottom: '1px solid rgba(0,212,255,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'linear-gradient(135deg, #00d4ff, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 0 20px rgba(0,212,255,0.4)' }}>⚡</div>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: '#e2e8f0', textTransform: 'uppercase' }}>ChargerPulse</h1>
-              <p style={{ fontSize: 10, color: '#00d4ff', letterSpacing: 3, textTransform: 'uppercase' }}>EV Intelligence Platform</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {[
-              { href: '/register', label: '+ ADD', color: '#00ff88', bg: 'rgba(0,255,136,0.1)', border: 'rgba(0,255,136,0.3)' },
-              { href: '/sites', label: 'SITES', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
-              { href: '/analytics/energy', label: 'ENERGY', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' },
-              { href: '/events', label: 'EVENTS', color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)' },
-              { href: '/alerts', label: 'ALERTS', color: '#ff4444', bg: 'rgba(255,68,68,0.1)', border: 'rgba(255,68,68,0.3)' },
-              { href: '/pricing', label: 'UPGRADE', color: '#00d4ff', bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)' },
-            ].map(btn => (
-              <a key={btn.href} href={btn.href} style={{
-                padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700,
-                letterSpacing: 1.5, textDecoration: 'none', color: btn.color,
-                background: btn.bg, border: `1px solid ${btn.border}`,
-              }}>{btn.label}</a>
-            ))}
-            <button onClick={handleLogout} style={{
-              padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 700,
-              letterSpacing: 1.5, color: '#ff4444', background: 'rgba(255,68,68,0.1)',
-              border: '1px solid rgba(255,68,68,0.3)', cursor: 'pointer',
-            }}>LOGOUT</button>
-          </div>
-
+        {/* Slim header — time + user, nav now lives in the sidebar */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(0,212,255,0.1)' }}>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 20, fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace', letterSpacing: 2 }}>
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace', letterSpacing: 2 }}>
               {time.toLocaleTimeString()}
             </p>
             <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>
@@ -246,6 +226,59 @@ export default function Dashboard() {
             {userEmail && (
               <p style={{ fontSize: 9, color: '#64748b', marginTop: 2, letterSpacing: 1 }}>{userEmail}</p>
             )}
+          </div>
+        </div>
+
+        {/* NETWORK PULSE — the boardroom numbers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
+          <div className="card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Chargers</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0' }}>{chargers.length}</p>
+            <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>{statusCounts.available + statusCounts.charging} online</p>
+          </div>
+          <div className="card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Network Uptime</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: getUptimeColor(parseFloat(avg('uptime24h'))) }}>{avg('uptime24h')}%</p>
+            <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Last 24 hours</p>
+          </div>
+          <div className="card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Energy Today</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: '#00d4ff' }}>{energyToday !== null ? energyToday.toFixed(1) : '—'}</p>
+            <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>kWh delivered</p>
+          </div>
+          <div className="card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontSize: 10, color: '#64748b', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Active Alerts</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: statusCounts.faulted > 0 ? '#ff4444' : '#00ff88' }}>{statusCounts.faulted}</p>
+            <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>{statusCounts.faulted > 0 ? 'Needs attention' : 'All clear'}</p>
+          </div>
+        </div>
+
+        {/* NETWORK HEALTH — status breakdown bar */}
+        <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0', marginBottom: 12 }}>Network Health</p>
+          <div style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', marginBottom: 12, background: 'rgba(255,255,255,0.04)' }}>
+            {chargers.length > 0 && (
+              <>
+                <div style={{ width: `${(statusCounts.available / chargers.length) * 100}%`, background: '#00ff88' }} />
+                <div style={{ width: `${(statusCounts.charging / chargers.length) * 100}%`, background: '#00d4ff' }} />
+                <div style={{ width: `${(statusCounts.faulted / chargers.length) * 100}%`, background: '#ff4444' }} />
+                <div style={{ width: `${(statusCounts.offline / chargers.length) * 100}%`, background: '#64748b' }} />
+              </>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Available', count: statusCounts.available, color: '#00ff88' },
+              { label: 'Charging', count: statusCounts.charging, color: '#00d4ff' },
+              { label: 'Faulted', count: statusCounts.faulted, color: '#ff4444' },
+              { label: 'Offline', count: statusCounts.offline, color: '#64748b' },
+            ].map(s => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>{s.label}</span>
+                <span style={{ fontSize: 11, color: '#e2e8f0', fontWeight: 700 }}>{s.count}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -277,33 +310,6 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* KPI CARDS — uptime */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: 'FLEET UPTIME 24H', value: `${avg('uptime24h')}%`, color: getUptimeColor(parseFloat(avg('uptime24h'))), icon: '◉', sub: 'Last 24 hours' },
-            { label: 'FLEET UPTIME 7D', value: `${avg('uptime7d')}%`, color: getUptimeColor(parseFloat(avg('uptime7d'))), icon: '◈', sub: 'Last 7 days' },
-            { label: 'FLEET UPTIME 30D', value: `${avg('uptime30d')}%`, color: getUptimeColor(parseFloat(avg('uptime30d'))), icon: '◇', sub: 'Last 30 days' },
-            { label: 'ACTIVE CHARGERS', value: chargers.length.toString(), color: '#00d4ff', icon: '⚡', sub: 'Connected nodes' },
-          ].map((kpi, i) => (
-            <div key={i} style={{
-              background: 'rgba(13,20,33,0.85)', borderRadius: 12, padding: '20px 24px',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 0 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-              position: 'relative', overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${kpi.color}, transparent)`, opacity: 0.6 }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <p style={{ fontSize: 9, color: '#64748b', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{kpi.label}</p>
-                  <p style={{ fontSize: 36, fontWeight: 800, color: kpi.color, lineHeight: 1, textShadow: `0 0 20px ${kpi.color}80` }}>{kpi.value}</p>
-                  <p style={{ fontSize: 10, color: '#64748b', marginTop: 6, letterSpacing: 1 }}>{kpi.sub}</p>
-                </div>
-                <span style={{ fontSize: 24, color: kpi.color, opacity: 0.4 }}>{kpi.icon}</span>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* MAIN GRID */}
@@ -340,7 +346,7 @@ export default function Dashboard() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    {['CHARGER ID', 'NAME', 'RISK', '24H', '7D', '30D', 'LAST SEEN'].map(h => (
+                    {['CHARGER ID', 'NAME', 'STATUS', 'RISK', '24H', '7D', '30D', 'LAST SEEN'].map(h => (
                       <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, color: '#64748b', letterSpacing: 2, fontWeight: 700 }}>{h}</th>
                     ))}
                   </tr>
@@ -353,6 +359,13 @@ export default function Dashboard() {
                     const riskLabel = charger.riskLevel === 'high' ? 'AT RISK'
                       : charger.riskLevel === 'medium' ? 'WATCH'
                       : 'HEALTHY'
+                    const statusColor = charger.status === 'available' ? '#00ff88'
+                      : charger.status === 'charging' ? '#00d4ff'
+                      : charger.status === 'faulted' ? '#ff4444'
+                      : '#64748b'
+                    const statusLabel = charger.status
+                      ? charger.status.charAt(0).toUpperCase() + charger.status.slice(1)
+                      : 'Unknown'
                     return (
                     <tr key={charger.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.03)')}
@@ -363,6 +376,12 @@ export default function Dashboard() {
                         </a>
                       </td>
                       <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: 12 }}>{charger.nickname}</td>
+                      <td style={{ padding: '14px 20px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: statusColor, fontWeight: 700 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor }} />
+                          {statusLabel}
+                        </span>
+                      </td>
                       <td style={{ padding: '14px 20px' }} title={charger.riskReasons?.join('; ') || 'No issues detected'}>
                         <span style={{
                           padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, letterSpacing: 1,
@@ -436,6 +455,7 @@ export default function Dashboard() {
           <p style={{ fontSize: 10, color: '#1e293b', letterSpacing: 1 }}>DATA REFRESHES EVERY 30S</p>
         </div>
 
+      </div>
       </div>
     </div>
   )

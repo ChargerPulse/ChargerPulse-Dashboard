@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Sidebar from '../../../components/Sidebar'
 
 export default function TariffSettingsPage() {
   const [pricePerKwh, setPricePerKwh] = useState('')
@@ -53,17 +54,14 @@ export default function TariffSettingsPage() {
   }
 
   return (
-    <div className="space-bg" style={{ padding: 32 }}>
+    <div style={{ display: 'flex' }}>
+      <Sidebar active="/settings/tariff" />
+      <div className="space-bg" style={{ padding: 32, flex: 1 }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>Tariff</h1>
-            <p style={{ color: '#64748b' }}>Set your price per kWh to enable revenue estimates</p>
-          </div>
-          <a href="/dashboard" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', padding: '10px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
-            ← Dashboard
-          </a>
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#e2e8f0', marginBottom: 4 }}>Tariff</h1>
+          <p style={{ color: '#64748b' }}>Set your price per kWh to enable revenue estimates</p>
         </div>
 
         {status === 'success' && (
@@ -108,6 +106,7 @@ export default function TariffSettingsPage() {
           </button>
         </div>
 
+      </div>
       </div>
     </div>
   )
