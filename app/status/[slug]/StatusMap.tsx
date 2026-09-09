@@ -3,13 +3,9 @@
 import { useEffect, useRef } from 'react'
 import type { Map as LeafletMap } from 'leaflet'
 
-interface PublicSite {
-  name: string
-  lat: number
-  lng: number
-}
+interface Site { lat: number; lng: number; name: string }
 
-export default function PublicStatusMap({ sites }: { sites: PublicSite[] }) {
+export default function StatusMap({ sites }: { sites: Site[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LeafletMap | null>(null)
 
@@ -38,7 +34,6 @@ export default function PublicStatusMap({ sites }: { sites: PublicSite[] }) {
       const bounds = L.latLngBounds([])
       for (const site of sites) {
         L.marker([site.lat, site.lng], { icon: markerIcon }).addTo(map)
-          .bindPopup(`<strong>${site.name.replace(/</g, '&lt;')}</strong>`)
         bounds.extend([site.lat, site.lng])
       }
 
@@ -58,9 +53,10 @@ export default function PublicStatusMap({ sites }: { sites: PublicSite[] }) {
     }
   }, [sites])
 
-  if (sites.length === 0) return null
-
   return (
-    <div ref={containerRef} style={{ height: 280, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }} />
+    <div
+      ref={containerRef}
+      style={{ height: 280, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}
+    />
   )
 }

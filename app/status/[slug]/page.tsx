@@ -4,14 +4,17 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import 'leaflet/dist/leaflet.css'
 
-const PublicStatusMap = dynamic(() => import('./PublicStatusMap'), { ssr: false })
+const StatusMap = dynamic(() => import('./StatusMap'), { ssr: false })
 
 interface StatusData {
-  totalChargers: number
-  uptimePercent: number
+  display_name: string
+  charger_count: number
+  online_count: number
+  uptime_24h: number
   counts: { available: number; charging: number; faulted: number; offline: number }
-  sites: Array<{ name: string; lat: number; lng: number }>
-  generatedAt: string
+  sites: Array<{ lat: number; lng: number; name: string }>
+  generated_at: string
+  error?: string
 }
 
 const COLORS = {
@@ -20,20 +23,33 @@ const COLORS = {
   border: 'rgba(255,255,255,0.08)',
 }
 
-export default function PublicStatusPage() {
+export default function PublicStatusPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
   const [data, setData] = useState<StatusData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    fetch('/api/public/status')
-      .then(res => {
-        if (!res.ok) throw new Error()
-        return res.json()
-      })
-      .then(d => { setData(d); setLoading(false) })
-      .catch(() => { setError(true); setLoading(false) })
-  }, [])
+    params.then(({ slug }) => {
+      fetch(`/api/public-status/${slug}`)
+        .then(res => {
+          if (res.status === 404) {
+            setNotFound(true)
+            setLoading(false)
+            return null
+          }
+          return res.json()
+        })
+        .then(d => {
+          if (d) setData(d)
+          setLoading(false)
+        })
+        .catch(() => setLoading(false))
+    })
+  }, [params])
 
   const cardStyle = {
     background: 'rgba(13,20,40,0.75)', border: `1px solid ${COLORS.border}`,
@@ -48,10 +64,10 @@ export default function PublicStatusPage() {
     )
   }
 
-  if (error || !data) {
+  if (notFound || !data) {
     return (
       <div className="space-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: COLORS.muted }}>Status data is temporarily unavailable.</p>
+        <p style={{ color: COLORS.muted }}>Status page not found.</p>
       </div>
     )
   }
@@ -67,30 +83,29 @@ export default function PublicStatusPage() {
     <div className="space-bg" style={{ padding: 24, paddingBottom: 60, minHeight: '100vh' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-        {/* Branded header */}
         <div style={{ textAlign: 'center', marginBottom: 32, paddingTop: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 800, letterSpacing: 3, color: COLORS.cyan, textTransform: 'uppercase' }}>⚡ ChargerPulse</p>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: COLORS.text, marginTop: 8 }}>Live network status</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: COLORS.text, marginTop: 8 }}>{data.display_name}</h1>
         </div>
 
-        {/* Headline uptime */}
         <div style={{ ...cardStyle, padding: 32, textAlign: 'center', marginBottom: 16 }}>
-          <p style={{ fontSize: 12, color: COLORS.faint, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Network Uptime</p>
+          <p style={{ fontSize: 12, color: COLORS.faint, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Network Uptime (24h)</p>
           <p style={{
             fontSize: 56, fontWeight: 800, lineHeight: 1,
-            color: data.uptimePercent >= 95 ? COLORS.green : data.uptimePercent >= 80 ? COLORS.amber : COLORS.red,
+            color: data.uptime_24h >= 95 ? COLORS.green : data.uptime_24h >= 80 ? COLORS.amber : COLORS.red,
           }}>
-            {data.uptimePercent}%
+            {data.uptime_24h}%
           </p>
-          <p style={{ color: COLORS.muted, fontSize: 14, marginTop: 12 }}>{data.totalChargers} charger{data.totalChargers !== 1 ? 's' : ''} monitored</p>
+          <p style={{ color: COLORS.muted, fontSize: 14, marginTop: 12 }}>
+            {data.charger_count} charger{data.charger_count !== 1 ? 's' : ''} monitored
+          </p>
         </div>
 
-        {/* Status breakdown */}
         <div style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, marginBottom: 16 }}>Status breakdown</p>
           <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 16, background: 'rgba(255,255,255,0.04)' }}>
             {statusItems.filter(s => s.count > 0).map(s => (
-              <div key={s.label} style={{ background: s.color, width: `${(s.count / Math.max(data.totalChargers, 1)) * 100}%` }} />
+              <div key={s.label} style={{ background: s.color, width: `${(s.count / Math.max(data.charger_count, 1)) * 100}%` }} />
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -103,16 +118,15 @@ export default function PublicStatusPage() {
           </div>
         </div>
 
-        {/* Map */}
         {data.sites.length > 0 && (
           <div style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, marginBottom: 16 }}>Locations</p>
-            <PublicStatusMap sites={data.sites} />
+            <StatusMap sites={data.sites} />
           </div>
         )}
 
         <p style={{ textAlign: 'center', color: COLORS.faint, fontSize: 11, marginTop: 24 }}>
-          Powered by ChargerPulse — EV charger monitoring &amp; management
+          Powered by ChargerPulse — EV charger monitoring &amp; management · Updated {new Date(data.generated_at).toLocaleString()}
         </p>
       </div>
     </div>
