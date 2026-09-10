@@ -26,7 +26,7 @@ export async function GET() {
 
   const { data: sites, error } = await supabase
     .from('sites')
-    .select('id, name, lat, lng, address, created_at')
+    .select('id, name, lat, lng, address, created_at, grid_status, backup_battery_active, backup_runtime_hours, grid_status_updated_at')
     .order('created_at', { ascending: false })
 
   if (error) {

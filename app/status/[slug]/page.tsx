@@ -12,7 +12,7 @@ interface StatusData {
   online_count: number
   uptime_24h: number
   counts: { available: number; charging: number; faulted: number; offline: number }
-  sites: Array<{ lat: number; lng: number; name: string }>
+  sites: Array<{ lat: number; lng: number; name: string; grid_status: 'stable' | 'load_shedding' | 'grid_down'; backup_battery_active: boolean }>
   generated_at: string
   error?: string
 }
@@ -122,6 +122,24 @@ export default function PublicStatusPage({
           <div style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, marginBottom: 16 }}>Locations</p>
             <StatusMap sites={data.sites} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+              {data.sites.map((site, i) => {
+                const gridMeta = site.grid_status === 'stable'
+                  ? { label: 'Grid Stable', color: COLORS.green, icon: '🟢' }
+                  : site.grid_status === 'load_shedding'
+                  ? { label: 'Load Shedding', color: COLORS.amber, icon: '⚠️' }
+                  : { label: 'Grid Down', color: COLORS.red, icon: '🔴' }
+                return (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: i > 0 ? `1px solid ${COLORS.border}` : 'none' }}>
+                    <span style={{ color: COLORS.text, fontSize: 13 }}>{site.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: gridMeta.color }}>
+                      {gridMeta.icon} {gridMeta.label}
+                      {site.backup_battery_active && <span style={{ color: COLORS.faint, marginLeft: 8 }}>🔋 Backup active</span>}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
 

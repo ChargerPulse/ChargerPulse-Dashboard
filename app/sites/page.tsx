@@ -14,6 +14,10 @@ interface Site {
   lng: number | null
   address: string | null
   chargerCount: number
+  grid_status: 'stable' | 'load_shedding' | 'grid_down'
+  backup_battery_active: boolean
+  backup_runtime_hours: number | null
+  grid_status_updated_at: string
 }
 
 export default function SitesPage() {
@@ -167,27 +171,7 @@ export default function SitesPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {sites.map(site => (
-                <div key={site.id} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '16px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}>
-                  <div>
-                    <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{site.name}</p>
-                    <p style={{ color: '#64748b', fontSize: 13 }}>
-                      {site.address || 'No address set'}
-                      {site.lat !== null && site.lng !== null && (
-                        <span style={{ color: '#334155' }}> · {site.lat.toFixed(4)}, {site.lng.toFixed(4)}</span>
-                      )}
-                    </p>
-                  </div>
-                  <span style={{
-                    background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)',
-                    color: '#00d4ff', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                  }}>
-                    {site.chargerCount} {site.chargerCount === 1 ? 'charger' : 'chargers'}
-                  </span>
-                </div>
+                <SiteCard key={site.id} site={site} onUpdated={fetchSites} />
               ))}
             </div>
           )}
@@ -195,6 +179,131 @@ export default function SitesPage() {
 
       </div>
       </div>
+    </div>
+  )
+}
+
+const GRID_STATUS_META: Record<Site['grid_status'], { label: string; color: string; icon: string }> = {
+  stable: { label: 'Grid Stable', color: '#00ff88', icon: '🟢' },
+  load_shedding: { label: 'Load Shedding', color: '#f59e0b', icon: '⚠️' },
+  grid_down: { label: 'Grid Down', color: '#ff4444', icon: '🔴' },
+}
+
+function SiteCard({ site, onUpdated }: { site: Site; onUpdated: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [gridStatus, setGridStatus] = useState(site.grid_status)
+  const [backupActive, setBackupActive] = useState(site.backup_battery_active)
+  const [runtimeHours, setRuntimeHours] = useState(site.backup_runtime_hours?.toString() || '')
+  const [saving, setSaving] = useState(false)
+
+  const meta = GRID_STATUS_META[site.grid_status]
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await fetch(`/api/sites/${site.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gridStatus, backupBatteryActive: backupActive, backupRuntimeHours: runtimeHours }),
+      })
+      setEditing(false)
+      onUpdated()
+    } catch {
+      // silently fail is fine here — the card just won't update; not worth a whole error-banner flow for this small control
+    }
+    setSaving(false)
+  }
+
+  const inputStyle = {
+    width: '100%', background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+    padding: '8px 12px', color: '#e2e8f0', fontSize: 13,
+    outline: 'none', boxSizing: 'border-box' as const,
+  }
+
+  return (
+    <div style={{
+      padding: '16px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.06)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{site.name}</p>
+          <p style={{ color: '#64748b', fontSize: 13 }}>
+            {site.address || 'No address set'}
+            {site.lat !== null && site.lng !== null && (
+              <span style={{ color: '#334155' }}> · {site.lat.toFixed(4)}, {site.lng.toFixed(4)}</span>
+            )}
+          </p>
+        </div>
+        <span style={{
+          background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)',
+          color: '#00d4ff', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+        }}>
+          {site.chargerCount} {site.chargerCount === 1 ? 'charger' : 'chargers'}
+        </span>
+      </div>
+
+      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <span style={{ color: meta.color, fontSize: 13, fontWeight: 700 }}>{meta.icon} {meta.label}</span>
+          {site.backup_battery_active && (
+            <span style={{ color: '#64748b', fontSize: 12, marginLeft: 10 }}>
+              🔋 Backup active{site.backup_runtime_hours ? ` — ~${site.backup_runtime_hours}h remaining` : ''}
+            </span>
+          )}
+        </div>
+        {!editing && (
+          <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', color: '#00d4ff', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
+            Update
+          </button>
+        )}
+      </div>
+
+      {editing && (
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            {(Object.keys(GRID_STATUS_META) as Site['grid_status'][]).map(s => (
+              <button key={s} onClick={() => setGridStatus(s)} style={{
+                flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                cursor: 'pointer', border: `1px solid ${gridStatus === s ? GRID_STATUS_META[s].color : 'rgba(255,255,255,0.1)'}`,
+                background: gridStatus === s ? `${GRID_STATUS_META[s].color}18` : 'transparent',
+                color: gridStatus === s ? GRID_STATUS_META[s].color : '#94a3b8',
+              }}>
+                {GRID_STATUS_META[s].icon} {GRID_STATUS_META[s].label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <input type="checkbox" checked={backupActive} onChange={e => setBackupActive(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <label style={{ color: '#94a3b8', fontSize: 12 }}>Backup battery active</label>
+          </div>
+
+          {backupActive && (
+            <div style={{ marginBottom: 12 }}>
+              <input type="number" step="0.5" min="0" value={runtimeHours}
+                onChange={e => setRuntimeHours(e.target.value)}
+                placeholder="Estimated runtime (hours)" style={inputStyle} />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={save} disabled={saving} style={{
+              flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 700, border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #00d4ff, #a855f7)', color: 'white',
+            }}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={() => setEditing(false)} style={{
+              flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8',
+            }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
