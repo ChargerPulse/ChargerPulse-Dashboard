@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import Sidebar from '../../../components/Sidebar'
 
 interface Period { kwh: number; sessions: number; revenue: number }
@@ -32,6 +34,48 @@ export default function EnergyPage() {
     borderRadius: 16, backdropFilter: 'blur(20px)' as const,
   }
 
+  const handleDownloadReport = () => {
+    if (!data) return
+    const doc = new jsPDF()
+
+    doc.setFontSize(18)
+    doc.text('ChargerPulse — Energy Report', 14, 20)
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 27)
+
+    autoTable(doc, {
+      startY: 34,
+      head: [['Period', 'Energy (kWh)', 'Sessions', `Est. Revenue (${data.currency})`]],
+      body: [
+        ['Today', data.today.kwh.toString(), data.today.sessions.toString(), data.today.revenue.toFixed(2)],
+        ['Last 7 days', data.week.kwh.toString(), data.week.sessions.toString(), data.week.revenue.toFixed(2)],
+        ['Last 30 days', data.month.kwh.toString(), data.month.sessions.toString(), data.month.revenue.toFixed(2)],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [4, 47, 51] },
+      styles: { fontSize: 9 },
+    })
+
+    if (data.byCharger.length > 0) {
+      const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
+      doc.setFontSize(12)
+      doc.setTextColor(0)
+      doc.text('By Charger — Last 30 Days', 14, finalY + 12)
+
+      autoTable(doc, {
+        startY: finalY + 16,
+        head: [['Charger', 'Energy (kWh)', 'Sessions']],
+        body: data.byCharger.map(c => [c.nickname, c.kwh.toString(), c.sessions.toString()]),
+        theme: 'grid',
+        headStyles: { fillColor: [4, 47, 51] },
+        styles: { fontSize: 9 },
+      })
+    }
+
+    doc.save(`chargerpulse-energy-report-${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex' }}>
@@ -55,9 +99,14 @@ export default function EnergyPage() {
       <div className="space-bg" style={{ padding: 24, paddingBottom: 60, flex: 1 }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>🔋 Energy</h1>
-          <p style={{ color: COLORS.faint, fontSize: 13 }}>Delivered energy and estimated revenue across your fleet</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>🔋 Energy</h1>
+            <p style={{ color: COLORS.faint, fontSize: 13 }}>Delivered energy and estimated revenue across your fleet</p>
+          </div>
+          <button onClick={handleDownloadReport} style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: COLORS.cyan, padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            📄 PDF Report
+          </button>
         </div>
 
         {/* Period summary cards */}

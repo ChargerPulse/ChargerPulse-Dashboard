@@ -110,6 +110,46 @@ export default function ChargerDetailPage({
   const [insightLoading, setInsightLoading] = useState(false)
   const [insightError, setInsightError] = useState<string | null>(null)
 
+  const [editing, setEditing] = useState(false)
+  const [editNickname, setEditNickname] = useState('')
+  const [editLocation, setEditLocation] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const startEditing = () => {
+    setEditNickname(data?.charger.nickname || '')
+    setEditLocation(data?.charger.location || '')
+    setEditError(null)
+    setEditing(true)
+  }
+
+  const saveEdit = async () => {
+    if (!editNickname.trim()) {
+      setEditError('Nickname cannot be empty.')
+      return
+    }
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      const res = await fetch(`/api/chargers/${chargerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: editNickname, location: editLocation }),
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setEditing(false)
+        refresh(chargerId)
+      } else {
+        setEditError(result.error || 'Something went wrong.')
+      }
+    } catch {
+      setEditError('Failed to reach the server.')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
   const generateInsight = async () => {
     setInsightLoading(true)
     setInsightError(null)
@@ -218,10 +258,53 @@ export default function ChargerDetailPage({
 
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
-            ⚡ {data.charger.nickname}
-          </h1>
-          <p style={{ color: COLORS.faint, fontFamily: 'monospace', fontSize: 13, letterSpacing: 1 }}>{data.charger.id}</p>
+          {!editing ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
+                  ⚡ {data.charger.nickname}
+                </h1>
+                <button onClick={startEditing} style={{
+                  background: 'none', border: 'none', color: COLORS.cyan, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                }}>
+                  Edit
+                </button>
+              </div>
+              <p style={{ color: COLORS.faint, fontFamily: 'monospace', fontSize: 13, letterSpacing: 1 }}>{data.charger.id}</p>
+              {data.charger.location && (
+                <p style={{ color: COLORS.muted, fontSize: 13, marginTop: 4 }}>📍 {data.charger.location}</p>
+              )}
+            </>
+          ) : (
+            <div style={{ ...cardStyle, padding: 20 }}>
+              {editError && <p style={{ color: COLORS.red, fontSize: 13, marginBottom: 12 }}>{editError}</p>}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', color: COLORS.faint, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Nickname</label>
+                <input type="text" value={editNickname} onChange={e => setEditNickname(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', color: COLORS.text, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', color: COLORS.faint, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Location</label>
+                <input type="text" value={editLocation} onChange={e => setEditLocation(e.target.value)}
+                  placeholder="e.g. Johannesburg Depot, Gate 2"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', color: COLORS.text, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={saveEdit} disabled={editSaving} style={{
+                  flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none',
+                  cursor: editSaving ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #00d4ff, #a855f7)', color: 'white',
+                }}>
+                  {editSaving ? 'Saving...' : 'Save'}
+                </button>
+                <button onClick={() => setEditing(false)} style={{
+                  flex: 1, padding: '10px 0', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: COLORS.muted,
+                }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Risk assessment */}

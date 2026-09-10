@@ -144,13 +144,31 @@ export async function PATCH(
   }
 
   const body = await request.json()
-  const siteId = body.siteId === '' || body.siteId === undefined ? null : body.siteId
+  const updates: Record<string, string | null> = {}
+
+  if ('siteId' in body) {
+    updates.site_id = body.siteId === '' || body.siteId === undefined ? null : body.siteId
+  }
+  if ('nickname' in body) {
+    const nickname = (body.nickname || '').trim()
+    if (!nickname) {
+      return Response.json({ error: 'Nickname cannot be empty.' }, { status: 400 })
+    }
+    updates.nickname = nickname
+  }
+  if ('location' in body) {
+    updates.location = (body.location || '').trim() || null
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return Response.json({ error: 'Nothing to update.' }, { status: 400 })
+  }
 
   // RLS (chargers update policy: user_id = auth.uid()) already prevents this
   // from touching a charger that isn't the caller's own.
   const { error } = await userScoped
     .from('chargers')
-    .update({ site_id: siteId })
+    .update(updates)
     .eq('id', id)
 
   if (error) {
