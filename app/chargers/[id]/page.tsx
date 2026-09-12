@@ -10,9 +10,11 @@ interface ChargerDetail {
     nickname: string
     location: string
     created_at: string
+    connector_count: number
   }
   liveStatus: string | null
-  activeTransactionId: number | null
+  connectorStatuses: Array<{ connector_id: number; status: string; updated_at: string }>
+  activeSessionsByConnector: Array<{ connector_id: number; ocpp_transaction_id: number }>
   riskLevel?: 'high' | 'medium' | 'low'
   riskReasons?: string[]
   uptime24h: number
@@ -168,8 +170,15 @@ export default function ChargerDetailPage({
     }
   }
 
+  const [selectedConnector, setSelectedConnector] = useState(1)
+
   const isOnline = data?.liveStatus && data.liveStatus !== 'offline'
   const isCharging = data?.liveStatus === 'charging'
+
+  const connectorCount = data?.charger.connector_count || 1
+  const selectedConnectorStatus = data?.connectorStatuses.find(c => c.connector_id === selectedConnector)?.status
+  const isSelectedConnectorCharging = selectedConnectorStatus === 'charging'
+  const selectedConnectorTransactionId = data?.activeSessionsByConnector.find(s => s.connector_id === selectedConnector)?.ocpp_transaction_id ?? null
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -379,27 +388,49 @@ export default function ChargerDetailPage({
             </p>
           )}
 
+          {connectorCount > 1 && (
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 10, color: COLORS.faint, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Connector</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {Array.from({ length: connectorCount }, (_, i) => i + 1).map(n => {
+                  const status = data?.connectorStatuses.find(c => c.connector_id === n)?.status
+                  const dotColor = status === 'charging' ? COLORS.cyan : status === 'faulted' ? COLORS.red : status === 'available' ? COLORS.green : COLORS.faint
+                  return (
+                    <button key={n} onClick={() => setSelectedConnector(n)} style={{
+                      flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', border: `1px solid ${selectedConnector === n ? COLORS.cyan : 'rgba(255,255,255,0.1)'}`,
+                      background: selectedConnector === n ? 'rgba(0,212,255,0.1)' : 'transparent',
+                      color: selectedConnector === n ? COLORS.cyan : COLORS.muted,
+                    }}>
+                      <span style={{ color: dotColor }}>●</span> Connector {n}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 16 }}>
             <button
-              disabled={!isOnline || isCharging || pendingAction !== null}
+              disabled={!isOnline || isSelectedConnectorCharging || pendingAction !== null}
               onClick={() => runCommand(
                 'RemoteStartTransaction',
-                { connectorId: 1, idTag: 'REMOTESTART' },
-                'Start a charging session on this charger now?'
+                { connectorId: selectedConnector, idTag: 'REMOTESTART' },
+                `Start a charging session on connector ${selectedConnector} now?`
               )}
-              style={commandButtonStyle(COLORS.green, !isOnline || isCharging || pendingAction !== null)}
+              style={commandButtonStyle(COLORS.green, !isOnline || isSelectedConnectorCharging || pendingAction !== null)}
             >
               {pendingAction === 'RemoteStartTransaction' ? 'Starting…' : '▶ Start'}
             </button>
 
             <button
-              disabled={!isOnline || !isCharging || pendingAction !== null || data?.activeTransactionId == null}
+              disabled={!isOnline || !isSelectedConnectorCharging || pendingAction !== null || selectedConnectorTransactionId == null}
               onClick={() => runCommand(
                 'RemoteStopTransaction',
-                { transactionId: data?.activeTransactionId },
-                'Stop the current charging session? This will interrupt the vehicle currently charging.'
+                { transactionId: selectedConnectorTransactionId },
+                `Stop the current charging session on connector ${selectedConnector}? This will interrupt the vehicle currently charging.`
               )}
-              style={commandButtonStyle(COLORS.red, !isOnline || !isCharging || pendingAction !== null || data?.activeTransactionId == null)}
+              style={commandButtonStyle(COLORS.red, !isOnline || !isSelectedConnectorCharging || pendingAction !== null || selectedConnectorTransactionId == null)}
             >
               {pendingAction === 'RemoteStopTransaction' ? 'Stopping…' : '■ Stop'}
             </button>
@@ -422,8 +453,8 @@ export default function ChargerDetailPage({
               disabled={!isOnline || pendingAction !== null}
               onClick={() => runCommand(
                 'UnlockConnector',
-                { connectorId: 1 },
-                'Unlock this charger\'s connector?'
+                { connectorId: selectedConnector },
+                `Unlock connector ${selectedConnector}?`
               )}
               style={commandButtonStyle(COLORS.cyan, !isOnline || pendingAction !== null)}
             >

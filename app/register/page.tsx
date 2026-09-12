@@ -6,7 +6,7 @@ import Sidebar from '../../components/Sidebar'
 interface Site { id: string; name: string }
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({ chargerId: '', nickname: '', location: '', siteId: '' })
+  const [formData, setFormData] = useState({ chargerId: '', nickname: '', location: '', siteId: '', connectorCount: '1' })
   const [sites, setSites] = useState<Site[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -45,7 +45,7 @@ export default function RegisterPage() {
         }
         setStatus('success')
         setMessage(`Charger "${formData.nickname}" registered successfully!`)
-        setFormData({ chargerId: '', nickname: '', location: '', siteId: '' })
+        setFormData({ chargerId: '', nickname: '', location: '', siteId: '', connectorCount: '1' })
       } else if (data.error === 'UPGRADE_REQUIRED') {
         setStatus('error')
         setMessage('You need a paid plan to add more chargers. Click Upgrade to subscribe!')
@@ -130,6 +130,21 @@ export default function RegisterPage() {
             <input type="text" value={formData.location}
               onChange={e => setFormData({ ...formData, location: e.target.value })}
               placeholder="e.g. Johannesburg Depot, Gate 2" style={inputStyle} />
+          </div>
+
+          <div style={{ marginBottom: 28 }}>
+            <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Number of Connectors</label>
+            <select value={formData.connectorCount}
+              onChange={e => setFormData({ ...formData, connectorCount: e.target.value })}
+              style={{ ...inputStyle, appearance: 'none' as const }}>
+              <option value="1">1 (single connector)</option>
+              <option value="2">2 (dual connector)</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+            <p style={{ color: '#334155', fontSize: 11, marginTop: 6 }}>
+              Most AC wallboxes have 1. Dual-gun DC fast chargers typically have 2.
+            </p>
           </div>
 
           {sites.length > 0 && (

@@ -76,9 +76,18 @@ export async function GET() {
       faultCountByCharger.set(f.cp_id, (faultCountByCharger.get(f.cp_id) || 0) + 1)
     }
 
-    const statusByCharger = new Map(
-      (statusRows || []).map(r => [r.cp_id, r.status])
-    )
+    // A charger can now have one charger_status row per connector. For the
+    // list view's single status badge, pick the most attention-worthy
+    // state across all of a charger's connectors: a fault anywhere beats
+    // everything else, then charging, then available, then offline.
+    const STATUS_PRIORITY: Record<string, number> = { faulted: 3, charging: 2, available: 1, offline: 0 }
+    const statusByCharger = new Map<string, string>()
+    for (const r of statusRows || []) {
+      const current = statusByCharger.get(r.cp_id)
+      if (!current || STATUS_PRIORITY[r.status] > STATUS_PRIORITY[current]) {
+        statusByCharger.set(r.cp_id, r.status)
+      }
+    }
 
     const sessionsTodayByCharger = new Map<string, number>()
     const energyTodayByCharger = new Map<string, number>()

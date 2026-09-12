@@ -60,22 +60,32 @@ export async function GET(
       .eq('cp_id', id)
       .order('triggered_at', { ascending: false })
 
-    const { data: statusRow } = await supabase
+    const { data: statusRows } = await supabase
       .from('charger_status')
-      .select('status')
+      .select('connector_id, status, updated_at')
       .eq('cp_id', id)
-      .maybeSingle()
+      .order('connector_id', { ascending: true })
 
-    // The transaction currently in progress, if any — RemoteStopTransaction
-    // needs to reference it by its OCPP transactionId.
-    const { data: activeSession } = await supabase
+    // Same priority as the list view: a fault anywhere is the most
+    // attention-worthy thing to surface as the single "overall" status.
+    const STATUS_PRIORITY: Record<string, number> = { faulted: 3, charging: 2, available: 1, offline: 0 }
+    let liveStatus: string | null = null
+    for (const r of statusRows || []) {
+      if (!liveStatus || STATUS_PRIORITY[r.status] > STATUS_PRIORITY[liveStatus]) {
+        liveStatus = r.status
+      }
+    }
+
+    // Per-connector — with multiple connectors, more than one session can
+    // be active simultaneously. Returning only the single most recent one
+    // (regardless of which connector) would let Stop target the wrong
+    // connector's session.
+    const { data: activeSessions } = await supabase
       .from('sessions')
-      .select('ocpp_transaction_id')
+      .select('connector_id, ocpp_transaction_id')
       .eq('cp_id', id)
       .is('stopped_at', null)
       .order('started_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
     const calcUptime = (since: Date) => {
       const filtered = (events || []).filter(e => new Date(e.ts) > since)
@@ -97,13 +107,14 @@ export async function GET(
       uptime24h,
       uptime7d,
       uptime30d,
-      isOffline: !statusRow || statusRow.status === 'offline',
+      isOffline: !liveStatus || liveStatus === 'offline',
     })
 
     return Response.json({
       charger,
-      liveStatus: statusRow?.status || null,
-      activeTransactionId: activeSession?.ocpp_transaction_id ?? null,
+      liveStatus,
+      connectorStatuses: statusRows || [],
+      activeSessionsByConnector: activeSessions || [],
       uptime24h,
       uptime7d,
       uptime30d,

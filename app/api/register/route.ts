@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       }, { status: 403 })
     }
 
-    const { chargerId, nickname, location } = await request.json()
+    const { chargerId, nickname, location, connectorCount } = await request.json()
 
     if (!chargerId || !nickname) {
       return Response.json({ error: 'Charger ID and Name are required' }, { status: 400 })
@@ -106,6 +106,8 @@ export async function POST(request: Request) {
     if (chargerId.includes(' ')) {
       return Response.json({ error: 'Charger ID cannot contain spaces' }, { status: 400 })
     }
+
+    const parsedConnectorCount = Math.max(1, Math.min(4, parseInt(connectorCount) || 1))
 
     const { data: claimResult, error: claimError } = await supabase
       .rpc('claim_charger', { charger_id: chargerId })
@@ -128,10 +130,11 @@ export async function POST(request: Request) {
 
     if (status === 'claimed') {
       // Charger had already auto-registered via OCPP (unclaimed). Now that
-      // it's ours, fill in the nickname/location the user just typed in.
+      // it's ours, fill in the nickname/location/connector count the user
+      // just specified.
       const { error: updateError } = await supabase
         .from('chargers')
-        .update({ nickname, location: location || null })
+        .update({ nickname, location: location || null, connector_count: parsedConnectorCount })
         .eq('id', chargerId)
 
       if (updateError) {
@@ -141,7 +144,7 @@ export async function POST(request: Request) {
       // status === 'not_found' — brand new charger that hasn't connected yet.
       const { error } = await supabase
         .from('chargers')
-        .insert({ id: chargerId, nickname, location: location || null, user_id: user.id })
+        .insert({ id: chargerId, nickname, location: location || null, connector_count: parsedConnectorCount, user_id: user.id })
 
       if (error) {
         return Response.json({ error: error.message }, { status: 500 })
