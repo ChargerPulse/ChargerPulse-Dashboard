@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/alerts', label: 'Alerts', icon: '🚨' },
   { href: '/settings/tariff', label: 'Tariff', icon: '💰' },
   { href: '/settings/status-page', label: 'Public Status Page', icon: '🌐' },
+  { href: '/settings/notifications', label: 'Notifications', icon: '🔔' },
 ]
 
 export default function Sidebar({ active }: { active?: string }) {

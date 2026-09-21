@@ -30,3 +30,39 @@ self.addEventListener('fetch', (event) => {
   }
   // Everything else (pages, API calls) — no interception, straight to network.
 })
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'ChargerPulse', message: 'You have a new alert.', url: '/dashboard' }
+  try {
+    if (event.data) data = { ...data, ...event.data.json() }
+  } catch {
+    // Non-JSON payload — fall back to the default text above.
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.message,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { url: data.url },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const targetUrl = event.notification.data?.url || '/dashboard'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus()
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl)
+      }
+    })
+  )
+})
