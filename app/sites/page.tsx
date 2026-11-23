@@ -228,7 +228,7 @@ function SiteCard({ site, onUpdated }: { site: Site; onUpdated: () => void }) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{site.name}</p>
+          <a href={`/sites/${site.id}`} style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15, marginBottom: 4, display: 'block', textDecoration: 'none' }}>{site.name} →</a>
           <p style={{ color: '#64748b', fontSize: 13 }}>
             {site.address || 'No address set'}
             {site.lat !== null && site.lng !== null && (
